@@ -6,6 +6,7 @@ export interface Producer {
   name: string;
   type: ProducerType;
   icon: string;
+  images: string[]; // Add this new array for multiple images
   description: string;
   rating: number;
   reviews: number;
@@ -16,6 +17,6 @@ export interface Producer {
   availability: AvailabilityStatus;
   featured: boolean;
   items: string[];
-  profileImage?: string; // Path to profile image
-  productImages: string[]; // Paths to product images
+  profileImage?: string; // Keep for backward compatibility
+  productImages: string[]; // Keep existing product images
 }
