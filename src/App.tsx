@@ -7,7 +7,6 @@ function App() {
   const [filterAvailability, setFilterAvailability] = useState('now');
   const [activeView, setActiveView] = useState('map');
 
-
   // Load Quicksand font
   useEffect(() => {
     const link = document.createElement('link');
@@ -19,17 +18,6 @@ function App() {
       document.head.removeChild(link);
     };
   }, []);
-  // Load Material Icons
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/icon?family=Material+Icons';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-    return () => {
-      document.head.removeChild(link);
-    };
-  }, []);
-
 
   // Enhanced style objects with modern touches
   const styles = {
@@ -55,11 +43,6 @@ function App() {
       display: 'flex',
       alignItems: 'center',
       marginBottom: '14px'
-    },
-    logoIcon: {
-      fontSize: '28px',
-      marginRight: '10px',
-      filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.2))'
     },
     logoText: {
       fontSize: '26px',
@@ -91,28 +74,27 @@ function App() {
       scrollbarWidth: 'none'
     },
     filterButton: {
-      padding: '8px 14px',
+      padding: '8px 16px',
       borderRadius: '20px',
       border: 'none',
       backgroundColor: 'white',
       color: '#444',
       cursor: 'pointer',
       fontSize: '14px',
-      fontWeight: '500',
+      fontWeight: '600',
       display: 'flex',
       alignItems: 'center',
+      justifyContent: 'center',
       transition: 'all 0.2s ease',
       boxShadow: '0 2px 5px rgba(0,0,0,0.08)',
-      whiteSpace: 'nowrap'
+      whiteSpace: 'nowrap',
+      minWidth: '90px',
+      fontFamily: 'Quicksand, sans-serif'
     },
     activeFilterButton: {
       backgroundColor: '#2A5D3C',
       color: 'white',
       boxShadow: '0 2px 5px rgba(42,93,60,0.4)'
-    },
-    icon: {
-      marginRight: '6px',
-      fontSize: '16px'
     },
     navigationRow: {
       display: 'flex',
@@ -169,7 +151,6 @@ function App() {
       <div style={styles.header}>
         <div style={styles.headerContent}>
           <div style={styles.logoContainer}>
-            <span style={styles.logoIcon}>🏡</span>
             <h1 style={styles.logoText}>HelloNeighbor</h1>
             <span style={styles.notificationBadge}>3</span>
           </div>
@@ -190,7 +171,7 @@ function App() {
               }}
               onClick={() => setSelectedCategory('all')}
             >
-              <span style={styles.icon}>🏠</span>All
+              All
             </button>
             <button 
               style={{
@@ -199,7 +180,7 @@ function App() {
               }}
               onClick={() => setSelectedCategory('gardener')}
             >
-              <span style={styles.icon}>🥬</span>Produce
+              Produce
             </button>
             <button 
               style={{
@@ -208,7 +189,7 @@ function App() {
               }}
               onClick={() => setSelectedCategory('baker')}
             >
-              <span style={styles.icon}>🍞</span>Baked
+              Baked
             </button>
             <button 
               style={{
@@ -217,7 +198,7 @@ function App() {
               }}
               onClick={() => setSelectedCategory('eggs')}
             >
-              <span style={styles.icon}>🥚</span>Eggs
+              Eggs
             </button>
             <button 
               style={{
@@ -226,7 +207,7 @@ function App() {
               }}
               onClick={() => setSelectedCategory('homecook')}
             >
-              <span style={styles.icon}>🍲</span>Prepared
+              Prepared
             </button>
             <button 
               style={{
@@ -235,7 +216,7 @@ function App() {
               }}
               onClick={() => setSelectedCategory('specialty')}
             >
-              <span style={styles.icon}>✨</span>Specialty
+              Specialty
             </button>
           </div>
         </div>
