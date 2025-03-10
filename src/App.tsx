@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MapView from './components/Map/MapView';
 import { producers } from './data/mockProducers';
 
@@ -6,6 +6,30 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [filterAvailability, setFilterAvailability] = useState('now');
   const [activeView, setActiveView] = useState('map');
+
+
+  // Load Quicksand font
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+  // Load Material Icons
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/icon?family=Material+Icons';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+
 
   // Enhanced style objects with modern touches
   const styles = {
@@ -38,11 +62,12 @@ function App() {
       filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.2))'
     },
     logoText: {
-      fontSize: '22px',
+      fontSize: '26px',
       fontWeight: 'bold',
       margin: 0,
-      letterSpacing: '0.3px',
-      textShadow: '0 1px 2px rgba(0,0,0,0.15)'
+      letterSpacing: '0.5px',
+      textShadow: '0 1px 2px rgba(0,0,0,0.15)',
+      fontFamily: 'Quicksand, sans-serif'
     },
     searchBar: {
       width: '100%',
