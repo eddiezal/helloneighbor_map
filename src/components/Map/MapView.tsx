@@ -19,10 +19,74 @@ interface MapViewProps {
   filterAvailability: string;
 }
 
+// Create a global namespace for our app to prevent conflicts
+if (typeof window !== 'undefined') {
+  window.HelloNeighbor = window.HelloNeighbor || {};
+  window.HelloNeighbor.selectProducer = (producerId: number) => {
+    console.log('Producer selection function initialized with ID:', producerId);
+    // This is just a placeholder that will be replaced in the component's useEffect
+  };
+}
+
+// Track if Google Maps API is already being loaded to avoid duplicate loading
+let isLoadingGoogleMaps = false;
+let googleMapsLoadedPromise: Promise<void> | null = null;
+
+// Helper function to load Google Maps API once
+const loadGoogleMapsApi = (apiKey: string): Promise<void> => {
+  if (window.google && window.google.maps) {
+    return Promise.resolve();
+  }
+  
+  if (googleMapsLoadedPromise) {
+    return googleMapsLoadedPromise;
+  }
+  
+  googleMapsLoadedPromise = new Promise((resolve, reject) => {
+    if (isLoadingGoogleMaps) {
+      // Check periodically if Maps is loaded
+      const checkIfLoaded = setInterval(() => {
+        if (window.google && window.google.maps) {
+          clearInterval(checkIfLoaded);
+          resolve();
+        }
+      }, 100);
+      return;
+    }
+    
+    isLoadingGoogleMaps = true;
+    
+    // Use callback name to ensure we don't get conflicts
+    const callbackName = `googleMapsInitialized_${Date.now()}`;
+    window[callbackName] = () => {
+      resolve();
+      delete window[callbackName];
+    };
+    
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName}&loading=async`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => {
+      reject(new Error('Failed to load Google Maps API'));
+      delete window[callbackName];
+      isLoadingGoogleMaps = false;
+      googleMapsLoadedPromise = null;
+    };
+    
+    document.head.appendChild(script);
+  });
+  
+  return googleMapsLoadedPromise;
+};
+
 const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAvailability }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   
   // Filter producers
   const filteredProducers = producers.filter(producer => {
@@ -38,7 +102,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
   });
 
   // Local image paths for specific producers
-  const producerLocalImages = {
+  const producerLocalImages: Record<string, string[]> = {
     "Till's Mushroom Farm": [
       "/images/producers/till-mushroom-farm/goldmush.jpg",
       "/images/producers/till-mushroom-farm/oyster.jpg",
@@ -75,7 +139,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
     // Get up to 3 images or use defaults
     const images = [];
     for (let i = 0; i < 3; i++) {
-      if (allImages[i]) {
+      if (allImages && allImages[i]) {
         images.push(`<div style="flex: 1; height: 100%; overflow: hidden;">
                        <img src="${allImages[i]}" style="width: 100%; height: 100%; object-fit: cover;" alt="${producer.name} product image">
                      </div>`);
@@ -202,7 +266,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
           <div style="display: flex; gap: 8px; margin-top: 10px;">
             <button 
               style="flex: 1; background-color: #2A5D3C; color: white; border: none; border-radius: 20px; padding: 8px 0; font-size: 12px; font-weight: 600; cursor: pointer;"
-              onclick="window.selectProducer(${producer.id})"
+              onclick="window.HelloNeighbor.selectProducer(${producer.id})"
             >View Profile</button>
             <button 
               style="width: 40px; display: flex; align-items: center; justify-content: center; background-color: #f5f5f5; border: none; border-radius: 20px; cursor: pointer;"
@@ -218,115 +282,143 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
     `;
   }, [createImageGrid, createSocialProofBadge, createStarRating, generateInventory, createViewingNow, getAvailabilityInfo]);
 
-  // Initialize map with simple, reliable approach
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+  // Function to create markers on the map
+  const createMarkers = useCallback(() => {
+    if (!mapInstanceRef.current) return;
     
-    function initializeMap() {
-      if (!window.google || !window.google.maps || !mapRef.current) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        // Center coordinates - San Diego
-        const center = { lat: 32.7000, lng: -117.1500 };
-        
-        // Create map
-        const map = new window.google.maps.Map(mapRef.current, {
-          center,
-          zoom: 10,
-          mapTypeControl: false,
-          streetViewControl: false,
-          zoomControl: true
-        });
-        
-        // Simple info window
-        const infoWindow = new window.google.maps.InfoWindow({
-          maxWidth: 320
-        });
-        
-        // Add click handler to window
-        window.selectProducer = (producerId) => {
-          const producer = producers.find(p => p.id === producerId);
-          if (producer) {
-            setSelectedProducer(producer);
-            infoWindow.close();
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+    
+    // Create info window if it doesn't exist
+    if (!infoWindowRef.current) {
+      infoWindowRef.current = new google.maps.InfoWindow({
+        maxWidth: 320
+      });
+    }
+    
+    // Add markers for each producer
+    filteredProducers.forEach(producer => {
+      if (!mapInstanceRef.current) return;
+      
+      const color = CATEGORY_COLORS[producer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default;
+      
+      // Create standard marker
+      const marker = new google.maps.Marker({
+        position: { lat: producer.lat, lng: producer.lng },
+        map: mapInstanceRef.current,
+        title: producer.name,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: color,
+          fillOpacity: 0.8,
+          strokeColor: '#FFFFFF',
+          strokeWeight: producer.featured ? 2 : 1,
+          scale: producer.featured ? 10 : 8
+        }
+      });
+      
+      markersRef.current.push(marker);
+      
+      // Add event listeners
+      marker.addListener('mouseover', () => {
+        if (infoWindowRef.current) {
+          try {
+            infoWindowRef.current.setContent(createEnhancedInfoWindow(producer));
+            infoWindowRef.current.open(mapInstanceRef.current, marker);
+          } catch (e) {
+            console.error('Error showing info window', e);
           }
-        };
+        }
+      });
+      
+      marker.addListener('mouseout', () => {
+        if (infoWindowRef.current) {
+          infoWindowRef.current.close();
+        }
+      });
+      
+      marker.addListener('click', () => {
+        setSelectedProducer(producer);
+        if (infoWindowRef.current) {
+          infoWindowRef.current.close();
+        }
+      });
+    });
+  }, [filteredProducers, createEnhancedInfoWindow]);
+
+  // Initialize map
+  useEffect(() => {
+    const initMap = async () => {
+      if (!mapRef.current) return;
+      
+      try {
+        setIsLoading(true);
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
         
-        // Add markers for each producer
-        filteredProducers.forEach(producer => {
-          const color = CATEGORY_COLORS[producer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default;
+        // Load Google Maps API
+        await loadGoogleMapsApi(apiKey);
+        
+        // Create map if it doesn't exist
+        if (!mapInstanceRef.current && google.maps) {
+          // Center coordinates - San Diego
+          const center = { lat: 32.7000, lng: -117.1500 };
           
-          // Create standard marker
-          const marker = new window.google.maps.Marker({
-            position: { lat: producer.lat, lng: producer.lng },
-            map,
-            title: producer.name,
-            icon: {
-              path: window.google.maps.SymbolPath.CIRCLE,
-              fillColor: color,
-              fillOpacity: 0.8,
-              strokeColor: '#FFFFFF',
-              strokeWeight: producer.featured ? 2 : 1,
-              scale: producer.featured ? 10 : 8
+          mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+            center,
+            zoom: 10,
+            mapTypeControl: false,
+            streetViewControl: false,
+            zoomControl: true
+          });
+        }
+        
+        // Update the global selectProducer function
+        if (window.HelloNeighbor) {
+          window.HelloNeighbor.selectProducer = (producerId: number) => {
+            const producer = producers.find(p => p.id === producerId);
+            if (producer) {
+              setSelectedProducer(producer);
+              if (infoWindowRef.current) {
+                infoWindowRef.current.close();
+              }
             }
-          });
-          
-          // Full featured info window
-          marker.addListener('mouseover', () => {
-            try {
-              infoWindow.setContent(createEnhancedInfoWindow(producer));
-              infoWindow.open(map, marker);
-            } catch (e) {
-              console.error('Error showing info window', e);
-            }
-          });
-          
-          marker.addListener('mouseout', () => {
-            infoWindow.close();
-          });
-          
-          marker.addListener('click', () => {
-            setSelectedProducer(producer);
-            infoWindow.close();
-          });
-        });
+          };
+        }
+        
+        // Create markers
+        createMarkers();
         
         setIsLoading(false);
       } catch (error) {
         console.error('Error initializing map:', error);
         setIsLoading(false);
       }
-    }
-    
-    // Check if Google Maps is already loaded
-    if (window.google && window.google.maps) {
-      initializeMap();
-      return;
-    }
-    
-    // Load Google Maps API
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
-    script.async = true;
-    script.defer = true;
-    script.onload = initializeMap;
-    script.onerror = () => {
-      console.error('Failed to load Google Maps API');
-      setIsLoading(false);
     };
     
-    document.head.appendChild(script);
+    initMap();
     
+    // Cleanup
     return () => {
-      if (window.selectProducer) {
-        delete window.selectProducer;
+      // Clear markers on unmount
+      if (markersRef.current.length > 0) {
+        markersRef.current.forEach(marker => marker.setMap(null));
+        markersRef.current = [];
+      }
+      
+      // Close info window
+      if (infoWindowRef.current) {
+        infoWindowRef.current.close();
       }
     };
-  }, [producers, selectedCategory, filterAvailability, createEnhancedInfoWindow]);
+  }, [producers, createMarkers]);
+  
+  // Recreate markers when filters change
+  useEffect(() => {
+    if (mapInstanceRef.current && !isLoading) {
+      createMarkers();
+    }
+  }, [selectedCategory, filterAvailability, createMarkers, isLoading]);
   
   const closeProducerDetails = () => {
     setSelectedProducer(null);
@@ -472,10 +564,13 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
 
 export default MapView;
 
-// Add TypeScript declaration for window.selectProducer
+// Add TypeScript declaration for window.HelloNeighbor
 declare global {
   interface Window {
-    selectProducer: (id: number) => void;
+    HelloNeighbor?: {
+      selectProducer: (id: number) => void;
+    };
     google: any;
+    [key: string]: any; // For dynamic callback names
   }
 }
