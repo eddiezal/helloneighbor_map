@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+// src/App.tsx
+import { useState, useEffect, CSSProperties } from 'react';
 import MapView from './components/Map/MapView';
 import ListView from './components/ListView/ListView';
 import { producers } from './data/mockProducers';
@@ -21,7 +22,7 @@ function App() {
   }, []);
 
   // Enhanced style objects with modern touches
-  const styles = {
+  const styles: Record<string, CSSProperties> = {
     container: {
       height: '100vh',
       width: '100%',
@@ -72,7 +73,7 @@ function App() {
       paddingBottom: '6px',
       WebkitOverflowScrolling: 'touch',
       msOverflowStyle: 'none',
-      scrollbarWidth: 'none'
+      scrollbarWidth: 'none' as 'none'
     },
     filterButton: {
       padding: '8px 16px',
@@ -133,12 +134,12 @@ function App() {
   };
 
   // Function to handle input focus
-  const handleFocus = (e) => {
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15), inset 0 1px 2px rgba(255,255,255,0.1)';
   };
 
   // Function to handle input blur
-  const handleBlur = (e) => {
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.1)';
   };
 

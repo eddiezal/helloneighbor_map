@@ -13,6 +13,17 @@ const CATEGORY_COLORS = {
   default: '#2196F3'    // Blue (fallback)
 };
 
+// TypeScript declaration for Google Maps related types
+declare global {
+  interface Window {
+    HelloNeighbor?: {
+      selectProducer: (id: number) => void;
+    };
+    google: any;
+    [key: string]: any; // For dynamic callback names
+  }
+}
+
 interface MapViewProps {
   producers: Producer[];
   selectedCategory: string;
@@ -21,11 +32,15 @@ interface MapViewProps {
 
 // Create a global namespace for our app to prevent conflicts
 if (typeof window !== 'undefined') {
-  window.HelloNeighbor = window.HelloNeighbor || {};
-  window.HelloNeighbor.selectProducer = (producerId: number) => {
-    console.log('Producer selection function initialized with ID:', producerId);
-    // This is just a placeholder that will be replaced in the component's useEffect
-  };
+  // Safely initialize the HelloNeighbor object
+  if (!window.HelloNeighbor) {
+    window.HelloNeighbor = {
+      selectProducer: function(producerId: number) {
+        console.log('Producer selection function initialized with ID:', producerId);
+        // This is just a placeholder that will be replaced in the component's useEffect
+      }
+    };
+  }
 }
 
 // Track if Google Maps API is already being loaded to avoid duplicate loading
@@ -84,9 +99,9 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
-  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const infoWindowRef = useRef<any>(null);
   
   // Filter producers
   const filteredProducers = producers.filter(producer => {
@@ -266,7 +281,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
           <div style="display: flex; gap: 8px; margin-top: 10px;">
             <button 
               style="flex: 1; background-color: #2A5D3C; color: white; border: none; border-radius: 20px; padding: 8px 0; font-size: 12px; font-weight: 600; cursor: pointer;"
-              onclick="window.HelloNeighbor.selectProducer(${producer.id})"
+              onclick="if(window.HelloNeighbor) window.HelloNeighbor.selectProducer(${producer.id})"
             >View Profile</button>
             <button 
               style="width: 40px; display: flex; align-items: center; justify-content: center; background-color: #f5f5f5; border: none; border-radius: 20px; cursor: pointer;"
@@ -284,7 +299,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
 
   // Function to create markers on the map
   const createMarkers = useCallback(() => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstanceRef.current || !window.google || !window.google.maps) return;
     
     // Clear existing markers
     markersRef.current.forEach(marker => marker.setMap(null));
@@ -292,24 +307,24 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
     
     // Create info window if it doesn't exist
     if (!infoWindowRef.current) {
-      infoWindowRef.current = new google.maps.InfoWindow({
+      infoWindowRef.current = new window.google.maps.InfoWindow({
         maxWidth: 320
       });
     }
     
     // Add markers for each producer
     filteredProducers.forEach(producer => {
-      if (!mapInstanceRef.current) return;
+      if (!mapInstanceRef.current || !window.google || !window.google.maps) return;
       
       const color = CATEGORY_COLORS[producer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default;
       
       // Create standard marker
-      const marker = new google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position: { lat: producer.lat, lng: producer.lng },
         map: mapInstanceRef.current,
         title: producer.name,
         icon: {
-          path: google.maps.SymbolPath.CIRCLE,
+          path: window.google.maps.SymbolPath.CIRCLE,
           fillColor: color,
           fillOpacity: 0.8,
           strokeColor: '#FFFFFF',
@@ -360,11 +375,11 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
         await loadGoogleMapsApi(apiKey);
         
         // Create map if it doesn't exist
-        if (!mapInstanceRef.current && google.maps) {
+        if (!mapInstanceRef.current && window.google && window.google.maps) {
           // Center coordinates - San Diego
           const center = { lat: 32.7000, lng: -117.1500 };
           
-          mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+          mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
             center,
             zoom: 10,
             mapTypeControl: false,
@@ -419,6 +434,16 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
       createMarkers();
     }
   }, [selectedCategory, filterAvailability, createMarkers, isLoading]);
+
+  // REMOVE THIS EFFECT - This is causing the error
+  // Google Maps script is loaded externally in the initMap function
+  // useEffect(() => {
+  //   // Google Maps script is loaded externally
+  //   const map = new window.google.maps.Map(mapRef.current, {
+  //     center: { lat: 37.7749, lng: -122.4194 },
+  //     zoom: 10
+  //   });
+  // }, []);
   
   const closeProducerDetails = () => {
     setSelectedProducer(null);
@@ -563,14 +588,3 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
 };
 
 export default MapView;
-
-// Add TypeScript declaration for window.HelloNeighbor
-declare global {
-  interface Window {
-    HelloNeighbor?: {
-      selectProducer: (id: number) => void;
-    };
-    google: any;
-    [key: string]: any; // For dynamic callback names
-  }
-}
