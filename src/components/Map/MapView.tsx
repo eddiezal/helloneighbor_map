@@ -2,7 +2,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Producer } from '../../types/Producer';
 import { X, Star, Clock } from 'lucide-react';
-import { categoryImages } from '../../data/mockProducers';
 
 // Define consistent colors to use in both markers and legend
 const CATEGORY_COLORS = {
@@ -24,18 +23,6 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const googleMapRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const infoWindowRef = useRef<any>(null);
-  const selectProducerFnRef = useRef<((id: number) => void) | null>(null);
-  
-  // Get API key from environment variables safely
-  const apiKey = typeof import.meta !== 'undefined' && import.meta.env 
-    ? import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '' 
-    : typeof window !== 'undefined' && (window as any).ENV_GOOGLE_MAPS_API_KEY || '';
-  
-  // San Diego coordinates
-  const sandiegoCenter = { lat: 32.7000, lng: -117.1500 }; // Adjusted to better center all locations
   
   // Filter producers
   const filteredProducers = producers.filter(producer => {
@@ -49,60 +36,6 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
     
     return true;
   });
-
-  // Function to calculate the proper info window position based on marker position
-  const calculateInfoWindowPosition = useCallback((marker: any, map: any) => {
-    if (!marker || !map) return new google.maps.Size(0, -10);
-    
-    try {
-      // Get the marker's pixel position within the map container
-      const scale = Math.pow(2, map.getZoom());
-      const nw = new google.maps.LatLng(
-        map.getBounds().getNorthEast().lat(),
-        map.getBounds().getSouthWest().lng()
-      );
-      const worldCoordinateNW = map.getProjection().fromLatLngToPoint(nw);
-      const worldCoordinate = map.getProjection().fromLatLngToPoint(marker.getPosition());
-      const pixelOffset = new google.maps.Point(
-        Math.floor((worldCoordinate.x - worldCoordinateNW.x) * scale),
-        Math.floor((worldCoordinate.y - worldCoordinateNW.y) * scale)
-      );
-      
-      // Get map container dimensions
-      const mapDiv = map.getDiv();
-      const mapHeight = mapDiv.offsetHeight;
-      
-      // The height of our info window (approximate)
-      const infoWindowHeight = 400;
-      
-      // Calculate where the info window would extend to (in pixels)
-      const topExtent = pixelOffset.y - infoWindowHeight;
-      const bottomExtent = pixelOffset.y + infoWindowHeight;
-      
-      // Check if window would extend beyond top or bottom
-      const wouldExtendBeyondTop = topExtent < 0;
-      const wouldExtendBeyondBottom = bottomExtent > mapHeight;
-      
-      // Position it where it fits best
-      if (wouldExtendBeyondTop && !wouldExtendBeyondBottom) {
-        // Position below if it would go off the top but not the bottom
-        return new google.maps.Size(0, 10);
-      } else if (!wouldExtendBeyondTop && wouldExtendBeyondBottom) {
-        // Position above if it would go off the bottom but not the top
-        return new google.maps.Size(0, -infoWindowHeight);
-      } else if (wouldExtendBeyondTop && wouldExtendBeyondBottom) {
-        // If it would overflow both ways, center it on the marker
-        return new google.maps.Size(0, -infoWindowHeight/2);
-      } else {
-        // Default: position it above the marker with enough space
-        return new google.maps.Size(0, -infoWindowHeight/2);
-      }
-    } catch (e) {
-      console.error("Error calculating info window position:", e);
-      // Default fallback
-      return new google.maps.Size(0, -50);
-    }
-  }, []);
 
   // Local image paths for specific producers
   const producerLocalImages = {
@@ -123,6 +56,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
     ]
   };
 
+  // Create image grid for info window
   const createImageGrid = useCallback((producer: Producer): string => {
     // Default images in case we don't have enough product images
     const defaultImg = `<div style="background-color: ${CATEGORY_COLORS[producer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default}; 
@@ -219,12 +153,12 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
     }
   }, []);
 
-  // Create hover content for info window
-  const createHoverContent = useCallback((producer: Producer): string => {
+  // Create full featured info window content
+  const createEnhancedInfoWindow = useCallback((producer: Producer): string => {
     const availability = getAvailabilityInfo(producer.availability);
     
     return `
-      <div style="width: 300px; max-width: 300px; padding: 0; border-radius: 12px; overflow: hidden; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.15); max-height: 400px; overflow-y: auto;">
+      <div style="width: 300px; padding: 0; border-radius: 12px; overflow: hidden; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
         ${createImageGrid(producer)}
         
         <div style="padding: 14px; background-color: white;">
@@ -284,107 +218,56 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
     `;
   }, [createImageGrid, createSocialProofBadge, createStarRating, generateInventory, createViewingNow, getAvailabilityInfo]);
 
-  // Function to load Google Maps API
-  const loadGoogleMapsAPI = useCallback(() => {
-    return new Promise<void>((resolve, reject) => {
-      if (window.google && window.google.maps) {
-        resolve();
-        return;
-      }
-      
-      // For development, you can use a fallback API key or disable the check
-      const effectiveApiKey = apiKey || 'YOUR_FALLBACK_API_KEY_FOR_DEVELOPMENT';
-      
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${effectiveApiKey}`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Google Maps API'));
-      document.head.appendChild(script);
-    });
-  }, [apiKey]);
-
-  // Initialize map
+  // Initialize map with simple, reliable approach
   useEffect(() => {
     if (!mapRef.current) return;
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
     
-    const initMap = async () => {
-      try {
-        await loadGoogleMapsAPI();
-        
-        const google = window.google;
-        if (!google || !google.maps) {
-          throw new Error('Google Maps not loaded');
-        }
+    function initializeMap() {
+      if (!window.google || !window.google.maps || !mapRef.current) {
+        setIsLoading(false);
+        return;
+      }
 
-        // Create map instance
-        const map = new google.maps.Map(mapRef.current, {
-          center: sandiegoCenter,
-          zoom: 10, // Zoomed out to show Chula Vista and Otay Ranch
+      try {
+        // Center coordinates - San Diego
+        const center = { lat: 32.7000, lng: -117.1500 };
+        
+        // Create map
+        const map = new window.google.maps.Map(mapRef.current, {
+          center,
+          zoom: 10,
           mapTypeControl: false,
           streetViewControl: false,
           zoomControl: true
         });
         
-        // Store map reference
-        googleMapRef.current = map;
-
-        // Create shared InfoWindow for hover state
-        const hoverInfoWindow = new google.maps.InfoWindow({
-          maxWidth: 320,
-          disableAutoPan: true // Disable auto-panning to prevent map movement
+        // Simple info window
+        const infoWindow = new window.google.maps.InfoWindow({
+          maxWidth: 320
         });
         
-        // Store infoWindow reference
-        infoWindowRef.current = hoverInfoWindow;
-        
-        // Add user location marker (blue dot)
-        new google.maps.Marker({
-          position: sandiegoCenter,
-          map: map,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: '#3B82F6',
-            fillOpacity: 0.7,
-            strokeColor: '#FFFFFF',
-            strokeWeight: 2,
-            scale: 10
-          }
-        });
-        
-        // Create function to handle clicks from InfoWindow
-        const handleSelectProducer = (producerId: number) => {
+        // Add click handler to window
+        window.selectProducer = (producerId) => {
           const producer = producers.find(p => p.id === producerId);
           if (producer) {
             setSelectedProducer(producer);
-            hoverInfoWindow.close(); // Close the hover window when profile is viewed
+            infoWindow.close();
           }
         };
         
-        // Store the function reference
-        selectProducerFnRef.current = handleSelectProducer;
-        
-        // Add it to window temporarily (will be cleaned up on unmount)
-        window.selectProducer = handleSelectProducer;
-        
-        // Clear any existing markers
-        markersRef.current.forEach(marker => marker.setMap(null));
-        markersRef.current = [];
-        
         // Add markers for each producer
         filteredProducers.forEach(producer => {
-          // Get color from our constant object
-          const categoryColor = CATEGORY_COLORS[producer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default;
+          const color = CATEGORY_COLORS[producer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default;
           
-          // Create simple dot marker
-          const marker = new google.maps.Marker({
+          // Create standard marker
+          const marker = new window.google.maps.Marker({
             position: { lat: producer.lat, lng: producer.lng },
-            map: map,
+            map,
             title: producer.name,
             icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              fillColor: categoryColor,
+              path: window.google.maps.SymbolPath.CIRCLE,
+              fillColor: color,
               fillOpacity: 0.8,
               strokeColor: '#FFFFFF',
               strokeWeight: producer.featured ? 2 : 1,
@@ -392,75 +275,58 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
             }
           });
           
-          // Store marker reference for cleanup
-          markersRef.current.push(marker);
-          
-          // Add hover listener to show info window
+          // Full featured info window
           marker.addListener('mouseover', () => {
             try {
-              // Calculate appropriate offset based on marker position
-              const pixelOffset = calculateInfoWindowPosition(marker, map);
-              
-              // Set the pixel offset
-              hoverInfoWindow.setOptions({
-                pixelOffset: pixelOffset
-              });
-              
-              // Set content and open
-              hoverInfoWindow.setContent(createHoverContent(producer));
-              hoverInfoWindow.open({
-                anchor: marker,
-                map: map,
-                shouldFocus: false
-              });
-            } catch (error) {
-              console.error("Error showing info window:", error);
-              // Fallback to simpler approach if calculation fails
-              hoverInfoWindow.setContent(createHoverContent(producer));
-              hoverInfoWindow.open(map, marker);
+              infoWindow.setContent(createEnhancedInfoWindow(producer));
+              infoWindow.open(map, marker);
+            } catch (e) {
+              console.error('Error showing info window', e);
             }
           });
           
-          // Close info window when mouse moves away
           marker.addListener('mouseout', () => {
-            hoverInfoWindow.close();
+            infoWindow.close();
           });
           
-          // Add click listener to show details
           marker.addListener('click', () => {
             setSelectedProducer(producer);
-            hoverInfoWindow.close(); // Close the hover window when clicked
+            infoWindow.close();
           });
         });
         
-        // Done loading
         setIsLoading(false);
       } catch (error) {
         console.error('Error initializing map:', error);
         setIsLoading(false);
       }
-    };
-
-    // Small delay to ensure DOM is ready
-    setTimeout(initMap, 100);
+    }
     
-    // Cleanup function
+    // Check if Google Maps is already loaded
+    if (window.google && window.google.maps) {
+      initializeMap();
+      return;
+    }
+    
+    // Load Google Maps API
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeMap;
+    script.onerror = () => {
+      console.error('Failed to load Google Maps API');
+      setIsLoading(false);
+    };
+    
+    document.head.appendChild(script);
+    
     return () => {
-      // Remove the global function
       if (window.selectProducer) {
         delete window.selectProducer;
       }
-      
-      // Clean up markers
-      if (markersRef.current) {
-        markersRef.current.forEach(marker => {
-          if (marker) {
-            marker.setMap(null);
-          }
-        });
-      }
     };
-  }, [apiKey, selectedCategory, filterAvailability, producers, createHoverContent, loadGoogleMapsAPI, calculateInfoWindowPosition]);
+  }, [producers, selectedCategory, filterAvailability, createEnhancedInfoWindow]);
   
   const closeProducerDetails = () => {
     setSelectedProducer(null);
@@ -477,9 +343,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
       <div 
         ref={mapRef} 
         className="w-full h-full"
-        style={{ 
-          minHeight: "400px"
-        }}
+        style={{ minHeight: "400px" }}
         aria-label="Map showing local producers"
       ></div>
       

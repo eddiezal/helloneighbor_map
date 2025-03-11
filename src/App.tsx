@@ -127,11 +127,6 @@ function App() {
     mapContainer: {
       flexGrow: 1,
       position: 'relative'
-    },
-    hiddenScrollbar: {
-      '&::-webkit-scrollbar': {
-        display: 'none'
-      }
     }
   };
 
@@ -163,7 +158,7 @@ function App() {
             onBlur={handleBlur}
           />
           
-          <div style={{...styles.filterContainer, ...styles.hiddenScrollbar}}>
+          <div style={styles.filterContainer}>
             <button 
               style={{
                 ...styles.filterButton,
@@ -278,34 +273,34 @@ function App() {
 
       {/* Add a style tag for specific CSS that can't be done with inline styles */}
       <style dangerouslySetInnerHTML={{__html: `
-        /* Hide scrollbars */
-        ::-webkit-scrollbar {
-          display: none;
-        }
-        
-        /* Custom scroll behavior */
-        * {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-        }
-        
-        /* Input placeholder styling */
-        ::placeholder {
-          color: #999;
-          opacity: 1;
-        }
-        
-        /* Smooth transitions */
-        button {
-          transition: all 0.2s ease;
-        }
-        button:hover {
-          transform: translateY(-1px);
-        }
-        button:active {
-          transform: translateY(1px);
-        }
-      `}} />
+  /* Hide scrollbars - fixed syntax */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Custom scroll behavior */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  /* Input placeholder styling */
+  ::placeholder {
+    color: #999;
+    opacity: 1;
+  }
+  
+  /* Smooth transitions */
+  button {
+    transition: all 0.2s ease;
+  }
+  button:hover {
+    transform: translateY(-1px);
+  }
+  button:active {
+    transform: translateY(1px);
+  }
+`}} />
     </div>
   );
 }
