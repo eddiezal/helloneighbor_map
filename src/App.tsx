@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import MapView from './components/Map/MapView';
+import ListView from './components/ListView/ListView';
 import { producers } from './data/mockProducers';
 
 function App() {
@@ -124,9 +125,10 @@ function App() {
       fontSize: '13px',
       boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
     },
-    mapContainer: {
+    contentContainer: {
       flexGrow: 1,
-      position: 'relative'
+      position: 'relative',
+      overflow: 'hidden'
     }
   };
 
@@ -138,6 +140,29 @@ function App() {
   // Function to handle input blur
   const handleBlur = (e) => {
     e.target.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.1)';
+  };
+
+  // Render the active view component
+  const renderActiveView = () => {
+    if (activeView === 'map') {
+      return (
+        <MapView 
+          producers={producers} 
+          selectedCategory={selectedCategory}
+          filterAvailability={filterAvailability}
+        />
+      );
+    } else {
+      return (
+        <div style={{ height: '100%', overflowY: 'auto' }}>
+          <ListView 
+            producers={producers}
+            selectedCategory={selectedCategory}
+            filterAvailability={filterAvailability}
+          />
+        </div>
+      );
+    }
   };
 
   return (
@@ -262,13 +287,9 @@ function App() {
         </div>
       </div>
       
-      {/* Map Component */}
-      <div style={styles.mapContainer}>
-        <MapView 
-          producers={producers} 
-          selectedCategory={selectedCategory}
-          filterAvailability={filterAvailability}
-        />
+      {/* Content Container - conditionally renders Map or List view */}
+      <div style={styles.contentContainer}>
+        {renderActiveView()}
       </div>
 
       {/* Add a style tag for specific CSS that can't be done with inline styles */}
@@ -299,6 +320,20 @@ function App() {
   }
   button:active {
     transform: translateY(1px);
+  }
+  
+  /* Primary color variable for tailwind */
+  .bg-primary {
+    background-color: #2A5D3C;
+  }
+  .text-primary {
+    color: #2A5D3C;
+  }
+  .border-primary {
+    border-color: #2A5D3C;
+  }
+  .ring-primary {
+    --tw-ring-color: #2A5D3C;
   }
 `}} />
     </div>
