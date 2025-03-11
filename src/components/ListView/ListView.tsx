@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Producer } from '../../types/Producer';
 import ProducerListItem from './ProducerListItem';
 import ProducerGrid from './ProducerGrid';
+import VirtualizedList from '../shared/VirtualizedList';
 import { Filter, Search, Grid, List, ChevronDown } from 'lucide-react';
 
 // Define sort options
@@ -103,16 +104,6 @@ const ListView: React.FC<ListViewProps> = ({
     setShowSortDropdown(prev => !prev);
   };
   
-  // Get today's featured producers
-  const featuredProducers = useMemo(() => {
-    return producers.filter(p => p.featured && p.availability === 'now').slice(0, 5);
-  }, [producers]);
-  
-  // Get recommended producers
-  const recommendedProducers = useMemo(() => {
-    return producers.sort((a, b) => b.rating - a.rating).slice(0, 4);
-  }, [producers]);
-  
   // Simulate loading for demo purposes
   useEffect(() => {
     setIsLoading(true);
@@ -123,6 +114,11 @@ const ListView: React.FC<ListViewProps> = ({
     return () => clearTimeout(timer);
   }, [selectedCategory, filterAvailability, searchQuery]);
   
+  // Render a producer list item
+  const renderProducerItem = (producer: Producer, index: number) => {
+    return <ProducerListItem key={producer.id} producer={producer} />;
+  };
+
   return (
     <div className="pt-3 px-4 bg-gray-50 min-h-full">
       {/* List Header with Search and Controls */}
@@ -260,10 +256,15 @@ const ListView: React.FC<ListViewProps> = ({
                 </div>
               ) : (
                 viewMode === 'list' ? (
-                  <div className="space-y-4">
-                    {sortedProducers.map(producer => (
-                      <ProducerListItem key={producer.id} producer={producer} />
-                    ))}
+                  <div className="space-y-0">
+                    <VirtualizedList
+                      items={sortedProducers}
+                      height={600} // Set a reasonable height for your list container
+                      itemHeight={180} // Approximate height of each list item
+                      renderItem={renderProducerItem}
+                      overscan={2}
+                      className="pb-4"
+                    />
                   </div>
                 ) : (
                   <ProducerGrid producers={sortedProducers} />
