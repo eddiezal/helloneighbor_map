@@ -172,7 +172,7 @@ function App() {
       <div style={styles.header}>
         <div style={styles.headerContent}>
           <div style={styles.logoContainer}>
-            <h1 style={styles.logoText}>HelloNeighbor</h1>
+            <h1 style={styles.logoText}>Grown-Home</h1>
             <span style={styles.notificationBadge}>3</span>
           </div>
           
@@ -228,7 +228,7 @@ function App() {
               }}
               onClick={() => setSelectedCategory('homecook')}
             >
-              Prepared
+              MEHKO
             </button>
             <button 
               style={{

@@ -266,7 +266,7 @@ export const producers: Producer[] = [
   // Additional San Diego neighborhood producers
   {
     id: 61,
-    name: "Marie's Lemonade Stand",
+    name: "Marie's Lemonade",
     type: "specialty",
     icon: "🍋",
     images: generatePlaceholderImages('lemonade,drink'),
@@ -320,7 +320,7 @@ export const producers: Producer[] = [
   },
   {
     id: 64,
-    name: "Till's Mushroom Farm",
+    name: "S'Pooy",
     type: "gardener",
     icon: "🍄",
     images: generatePlaceholderImages('mushroom,fungi'),

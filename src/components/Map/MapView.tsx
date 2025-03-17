@@ -118,7 +118,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
 
   // Local image paths for specific producers
   const producerLocalImages: Record<string, string[]> = {
-    "Till's Mushroom Farm": [
+    "S'Pooy": [
       "/images/producers/till-mushroom-farm/goldmush.jpg",
       "/images/producers/till-mushroom-farm/oyster.jpg",
       "/images/producers/till-mushroom-farm/pink.jpg"
@@ -129,9 +129,9 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
       "/images/producers/people-of-corn/corn3.jpg"
     ],
     "Marie's Lemonade": [
-      "/images/producers/marie-lemonade/lemonade1.jpg",
-      "/images/producers/marie-lemonade/lemonade2.jpg",
-      "/images/producers/marie-lemonade/lemonade3.jpg"
+      "/images/producers/marie-lemonade/lemon_club.jpg",
+      "/images/producers/marie-lemonade/lemons.jpg",
+      "/images/producers/marie-lemonade/mint-lemonade.jpg"
     ]
   };
 
