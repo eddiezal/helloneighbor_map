@@ -1,5 +1,7 @@
+// 2. Update jest.config.js to properly support ESM
 // jest.config.js
-module.exports = {
+/** @type {import('jest').Config} */
+const config = {
     // The test environment that will be used for testing
     testEnvironment: 'jsdom',
     
@@ -12,12 +14,16 @@ module.exports = {
     // File extensions Jest looks for
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
     
-    // Transform files with babel-jest
+    // Transform files with ts-jest and babel-jest
     transform: {
-      '^.+\\.(ts|tsx)$': ['ts-jest', {
-        tsconfig: 'tsconfig.json',
-      }],
-      '^.+\\.(js|jsx)$': 'babel-jest',
+      '^.+\\.(ts|tsx)$': [
+        'ts-jest',
+        {
+          useESM: true,
+          tsconfig: 'tsconfig.json',
+        },
+      ],
+      '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './babel.config.js' }]
     },
     
     // Indicates whether the coverage information should be collected
@@ -39,6 +45,7 @@ module.exports = {
     moduleNameMapper: {
       '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
       '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/src/__mocks__/fileMock.js',
+      '^@/(.*)$': '<rootDir>/src/$1'
     },
     
     // Automatically clear mock calls and instances between every test
@@ -46,6 +53,9 @@ module.exports = {
     
     // Indicates whether each individual test should be reported during the run
     verbose: true,
+    
+    // Support ES modules
+    extensionsToTreatAsEsm: ['.ts', '.tsx'],
     
     // Use this configuration option to add custom reporters to Jest
     reporters: ['default'],
@@ -61,5 +71,12 @@ module.exports = {
     },
     
     // Tests will fail if there's a snapshot difference
-    snapshotSerializers: []
+    snapshotSerializers: [],
+    
+    // Silence specific warning messages
+    transformIgnorePatterns: [
+      'node_modules/(?!(@react-google-maps|lucide-react|react-router-dom)/)'
+    ],
   };
+  
+  module.exports = config;
