@@ -1,8 +1,9 @@
-// src/components/ListView/ProducerListItem.tsx
+// src/features/producers/components/ProducerCard.tsx
 import React, { useState } from 'react';
-import { Producer } from '../../types/Producer';
+import { Producer } from '../types/Producer.types';
 import { Star, Clock, Heart, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
+// Rest of the file stays the same...
 // Category color mapping (should be consistent across the app)
 const CATEGORY_COLORS = {
   baker: '#FF5252',     // Red
