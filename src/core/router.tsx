@@ -1,66 +1,81 @@
-// src/core/router.tsx
-import { createBrowserRouter } from 'react-router-dom';
+import React from 'react';
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+  Outlet
+} from 'react-router-dom';
+import { useAppContext } from './context/AppContext';
+
+// Layout
 import AppLayout from '../features/ui/layout/AppLayout';
-import MapView from '../components/Map/MapView'; // Still using the original component
-import ListView from '../components/ListView/ListView'; // Still using the original component
 
-// We'll gradually migrate to these as we move components
-// import MapView from '../features/map/components/MapView';
-// import ListView from '../features/listings/components/ListView';
+// Pages
+import HomePage from '../pages/HomePage';
+import LoginPage from '../pages/LoginPage';
+import RegisterPage from '../pages/RegisterPage';
+import ProfilePage from '../pages/ProfilePage';
+import ProducerDetailPage from '../pages/ProducerDetailPage';
+import NotFoundPage from '../pages/NotFoundPage';
 
-// Create placeholder pages for future routes
-const Home = () => <div>Home Page (Placeholder)</div>;
-const ProducerDetail = () => <div>Producer Detail Page (Placeholder)</div>;
-const Login = () => <div>Login Page (Placeholder)</div>;
-const Register = () => <div>Register Page (Placeholder)</div>;
-const UserProfile = () => <div>User Profile Page (Placeholder)</div>;
-const Settings = () => <div>Settings Page (Placeholder)</div>;
+// Protected route wrapper
+const ProtectedRoute: React.FC = () => {
+  const { isAuthenticated } = useAppContext();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <Outlet />;
+};
 
-export const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <AppLayout />,
-    children: [
-      {
-        index: true,
-        element: <Home />,
-      },
-      {
-        path: 'map',
-        element: <MapView 
-          producers={[]} 
-          selectedCategory="all" 
-          filterAvailability="now" 
-        />,
-      },
-      {
-        path: 'browse',
-        element: <ListView 
-          producers={[]} 
-          selectedCategory="all" 
-          filterAvailability="now" 
-        />,
-      },
-      {
-        path: 'producers/:id',
-        element: <ProducerDetail />,
-      },
-      {
-        path: 'profile',
-        element: <UserProfile />,
-      },
-      {
-        path: 'settings',
-        element: <Settings />,
-      },
-    ],
-  },
-  {
-    path: '/login',
-    element: <Login />,
-  },
-  {
-    path: '/register',
-    element: <Register />,
-  },
-]);
+// Create router configuration
+const createAppRouter = () => {
+  return createBrowserRouter([
+    {
+      path: '/',
+      element: <AppLayout />,
+      children: [
+        {
+          index: true,
+          element: <HomePage />
+        },
+        {
+          path: 'producer/:id',
+          element: <ProducerDetailPage />
+        },
+        {
+          path: 'login',
+          element: <LoginPage />
+        },
+        {
+          path: 'register',
+          element: <RegisterPage />
+        },
+        {
+          path: '/',
+          element: <ProtectedRoute />,
+          children: [
+            {
+              path: 'profile',
+              element: <ProfilePage />
+            }
+          ]
+        },
+        {
+          path: '*',
+          element: <NotFoundPage />
+        }
+      ]
+    }
+  ]);
+};
+
+// Router component
+export const Router: React.FC = () => {
+  const router = createAppRouter();
+  
+  return <RouterProvider router={router} />;
+};
+
+export default Router;

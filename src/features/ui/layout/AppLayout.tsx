@@ -1,330 +1,289 @@
-// src/features/ui/layout/AppLayout.tsx
-import React, { useState, useEffect, CSSProperties } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useAppContext } from '../../../core/context/AppContext';
+import { Search, User, Menu, X, Map, List } from 'lucide-react';
 
 const AppLayout: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [filterAvailability, setFilterAvailability] = useState('now');
-  const [activeView, setActiveView] = useState('map');
-  const navigate = useNavigate();
-
-  // Load Quicksand font
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-    
-    return () => {
-      document.head.removeChild(link);
-    };
-  }, []);
-
-  // Enhanced style objects with modern touches
-  const styles: Record<string, CSSProperties> = {
-    container: {
-      height: '100vh',
-      width: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    },
-    header: {
-      background: 'linear-gradient(to right, #2A5D3C, #3A6A4B)',
-      color: 'white',
-      padding: '15px 20px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.15)'
-    },
-    headerContent: {
-      maxWidth: '1200px',
-      margin: '0 auto',
-      position: 'relative'
-    },
-    logoContainer: {
-      display: 'flex',
-      alignItems: 'center',
-      marginBottom: '14px'
-    },
-    logoText: {
-      fontSize: '26px',
-      fontWeight: 'bold',
-      margin: 0,
-      letterSpacing: '0.5px',
-      textShadow: '0 1px 2px rgba(0,0,0,0.15)',
-      fontFamily: 'Quicksand, sans-serif'
-    },
-    searchBar: {
-      width: '100%',
-      padding: '10px 15px',
-      borderRadius: '24px',
-      border: 'none',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.1)',
-      fontSize: '15px',
-      marginBottom: '16px',
-      transition: 'all 0.2s ease',
-      outline: 'none'
-    },
-    filterContainer: {
-      display: 'flex',
-      overflowX: 'auto',
-      gap: '8px',
-      marginBottom: '14px',
-      paddingBottom: '6px',
-      WebkitOverflowScrolling: 'touch',
-      msOverflowStyle: 'none',
-      scrollbarWidth: 'none' as 'none'
-    },
-    filterButton: {
-      padding: '8px 16px',
-      borderRadius: '20px',
-      border: 'none',
-      backgroundColor: 'white',
-      color: '#444',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: '600',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'all 0.2s ease',
-      boxShadow: '0 2px 5px rgba(0,0,0,0.08)',
-      whiteSpace: 'nowrap',
-      minWidth: '90px',
-      fontFamily: 'Quicksand, sans-serif'
-    },
-    activeFilterButton: {
-      backgroundColor: '#2A5D3C',
-      color: 'white',
-      boxShadow: '0 2px 5px rgba(42,93,60,0.4)'
-    },
-    navigationRow: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      marginBottom: '4px',
-      backgroundColor: '#f5f5f5',
-      padding: '10px 20px',
-      borderBottom: '1px solid #e0e0e0'
-    },
-    navGroup: {
-      display: 'flex',
-      gap: '8px'
-    },
-    notificationBadge: {
-      display: 'inline-flex',
-      backgroundColor: '#FF5252',
-      color: 'white',
-      fontWeight: 'bold',
-      borderRadius: '50%',
-      width: '24px',
-      height: '24px',
-      justifyContent: 'center',
-      alignItems: 'center',
-      position: 'absolute',
-      top: '2px',
-      right: '2px',
-      fontSize: '13px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-    },
-    contentContainer: {
-      flexGrow: 1,
-      position: 'relative',
-      overflow: 'hidden'
-    }
+  const { 
+    selectedCategory, 
+    setSelectedCategory,
+    filterAvailability,
+    setFilterAvailability,
+    viewMode,
+    setViewMode,
+    searchQuery,
+    setSearchQuery,
+    isAuthenticated,
+    user
+  } = useAppContext();
+  
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  
+  // Categories for filter
+  const categories = [
+    { id: 'all', label: 'All', icon: '🏡' },
+    { id: 'gardener', label: 'Produce', icon: '🥬' },
+    { id: 'baker', label: 'Baked', icon: '🍞' },
+    { id: 'eggs', label: 'Eggs', icon: '🥚' },
+    { id: 'homecook', label: 'MEHKO', icon: '👨‍🍳' },
+    { id: 'specialty', label: 'Specialty', icon: '🍯' }
+  ];
+  
+  // Is this the main home page that should show the map/list view?
+  const isHomePage = location.pathname === '/';
+  
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
-
-  // Function to handle input focus
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15), inset 0 1px 2px rgba(255,255,255,0.1)';
-  };
-
-  // Function to handle input blur
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.1)';
-  };
-
-  // Function to handle view switch
-  const handleViewChange = (view: 'map' | 'list') => {
-    setActiveView(view);
-    
-    // If using React Router, you could navigate to different routes here
-    if (view === 'map') {
-      navigate('/map');
-    } else {
-      navigate('/browse');
-    }
-  };
-
+  
   return (
-    <div style={styles.container}>
-      {/* Enhanced Header with depth and modern styling */}
-      <div style={styles.header}>
-        <div style={styles.headerContent}>
-          <div style={styles.logoContainer}>
-            <h1 style={styles.logoText} onClick={() => navigate('/')}>Grown-Home</h1>
-            <span style={styles.notificationBadge}>3</span>
+    <div className="flex flex-col min-h-screen">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-white shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <Link to="/" className="flex items-center">
+              <span className="text-xl font-bold text-primary">HelloNeighbor</span>
+            </Link>
+            
+            {/* Desktop Menu */}
+            <nav className="hidden md:flex items-center space-x-4">
+              <Link 
+                to="/" 
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-primary"
+              >
+                Explore
+              </Link>
+              <Link 
+                to="/about" 
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-primary"
+              >
+                About
+              </Link>
+              <Link 
+                to="/contact" 
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-primary"
+              >
+                Contact
+              </Link>
+            </nav>
+            
+            {/* Authentication/Profile */}
+            <div className="flex items-center">
+              {isAuthenticated ? (
+                <div className="flex items-center">
+                  <span className="mr-2 text-sm hidden md:inline-block">Hi, {user?.name || 'User'}</span>
+                  <Link 
+                    to="/profile"
+                    className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                  >
+                    <User className="w-5 h-5" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Link 
+                    to="/login"
+                    className="px-3 py-1.5 text-sm border border-primary text-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+                  >
+                    Log In
+                  </Link>
+                  <Link 
+                    to="/register"
+                    className="px-3 py-1.5 text-sm bg-primary text-white rounded-full hover:bg-primary-dark transition-colors hidden md:block"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
+              
+              {/* Mobile menu button */}
+              <button 
+                className="p-2 ml-3 text-gray-600 rounded-md md:hidden"
+                onClick={toggleMobileMenu}
+              >
+                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
           
-          <input 
-            type="text" 
-            placeholder="Search for ingredients, foods, neighbors..." 
-            style={styles.searchBar}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-          />
+          {/* Category Filters */}
+          {isHomePage && (
+            <div className="py-3 border-t overflow-x-auto scrollbar-hide">
+              <div className="flex space-x-2">
+                {categories.map(category => (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`flex items-center px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                      selectedCategory === category.id
+                        ? 'bg-primary text-white font-medium'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <span className="mr-1">{category.icon}</span>
+                    {category.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           
-          <div style={styles.filterContainer}>
-            <button 
-              style={{
-                ...styles.filterButton,
-                ...(selectedCategory === 'all' ? styles.activeFilterButton : {})
-              }}
-              onClick={() => setSelectedCategory('all')}
+          {/* View Mode & Availability Filters */}
+          {isHomePage && (
+            <div className="py-3 border-t flex justify-between items-center overflow-x-auto scrollbar-hide">
+              {/* Availability filters */}
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => setFilterAvailability('now')}
+                  className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                    filterAvailability === 'now'
+                      ? 'bg-green-500 text-white font-medium'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Available Now
+                </button>
+                <button 
+                  onClick={() => setFilterAvailability('all')}
+                  className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                    filterAvailability === 'all'
+                      ? 'bg-primary text-white font-medium'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Show All
+                </button>
+              </div>
+              
+              {/* View mode toggle */}
+              <div className="flex border rounded-lg overflow-hidden">
+                <button 
+                  onClick={() => setViewMode('map')}
+                  className={`flex items-center px-3 py-1.5 text-sm ${
+                    viewMode === 'map'
+                      ? 'bg-primary text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Map className="w-4 h-4 mr-1" />
+                  Map
+                </button>
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`flex items-center px-3 py-1.5 text-sm ${
+                    viewMode === 'list'
+                      ? 'bg-primary text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <List className="w-4 h-4 mr-1" />
+                  List
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+      
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-white shadow-lg">
+          <div className="px-4 py-2 space-y-1">
+            <Link 
+              to="/" 
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              All
-            </button>
-            <button 
-              style={{
-                ...styles.filterButton,
-                ...(selectedCategory === 'gardener' ? styles.activeFilterButton : {})
-              }}
-              onClick={() => setSelectedCategory('gardener')}
+              Explore
+            </Link>
+            <Link 
+              to="/about" 
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              Produce
-            </button>
-            <button 
-              style={{
-                ...styles.filterButton,
-                ...(selectedCategory === 'baker' ? styles.activeFilterButton : {})
-              }}
-              onClick={() => setSelectedCategory('baker')}
+              About
+            </Link>
+            <Link 
+              to="/contact" 
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              Baked
-            </button>
-            <button 
-              style={{
-                ...styles.filterButton,
-                ...(selectedCategory === 'eggs' ? styles.activeFilterButton : {})
-              }}
-              onClick={() => setSelectedCategory('eggs')}
-            >
-              Eggs
-            </button>
-            <button 
-              style={{
-                ...styles.filterButton,
-                ...(selectedCategory === 'homecook' ? styles.activeFilterButton : {})
-              }}
-              onClick={() => setSelectedCategory('homecook')}
-            >
-              MEHKO
-            </button>
-            <button 
-              style={{
-                ...styles.filterButton,
-                ...(selectedCategory === 'specialty' ? styles.activeFilterButton : {})
-              }}
-              onClick={() => setSelectedCategory('specialty')}
-            >
-              Specialty
-            </button>
+              Contact
+            </Link>
+            {!isAuthenticated && (
+              <Link 
+                to="/register" 
+                className="block px-3 py-2 rounded-md text-base font-medium text-primary"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Sign Up
+              </Link>
+            )}
           </div>
         </div>
-      </div>
+      )}
       
-      {/* Navigation Bar */}
-      <div style={styles.navigationRow}>
-        <div style={styles.navGroup}>
-          <button 
-            style={{
-              ...styles.filterButton,
-              ...(filterAvailability === 'now' ? styles.activeFilterButton : {})
-            }}
-            onClick={() => setFilterAvailability('now')}
-          >
-            Available Now
-          </button>
-          <button 
-            style={{
-              ...styles.filterButton,
-              ...(filterAvailability === 'all' ? styles.activeFilterButton : {})
-            }}
-            onClick={() => setFilterAvailability('all')}
-          >
-            Show All
-          </button>
+      {/* Search Bar (only on homepage) */}
+      {isHomePage && (
+        <div className="bg-white border-b shadow-sm">
+          <div className="container mx-auto px-4 py-3">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search for ingredients, foods, neighbors..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-10 py-2 border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              />
+              <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+              {searchQuery && (
+                <button 
+                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-        
-        <div style={styles.navGroup}>
-          <button 
-            style={{
-              ...styles.filterButton,
-              ...(activeView === 'map' ? styles.activeFilterButton : {})
-            }}
-            onClick={() => handleViewChange('map')}
-          >
-            Map
-          </button>
-          <button 
-            style={{
-              ...styles.filterButton,
-              ...(activeView === 'list' ? styles.activeFilterButton : {})
-            }}
-            onClick={() => handleViewChange('list')}
-          >
-            List
-          </button>
-        </div>
-      </div>
+      )}
       
-      {/* Content Container - This is where React Router will inject content */}
-      <div style={styles.contentContainer}>
-        <Outlet context={{ selectedCategory, filterAvailability }} />
-      </div>
-
-      {/* Add a style tag for specific CSS that can't be done with inline styles */}
-      <style dangerouslySetInnerHTML={{__html: `
-  /* Hide scrollbars - fixed syntax */
-  ::-webkit-scrollbar {
-    display: none;
-  }
-  
-  /* Custom scroll behavior */
-  * {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  
-  /* Input placeholder styling */
-  ::placeholder {
-    color: #999;
-    opacity: 1;
-  }
-  
-  /* Smooth transitions */
-  button {
-    transition: all 0.2s ease;
-  }
-  button:hover {
-    transform: translateY(-1px);
-  }
-  button:active {
-    transform: translateY(1px);
-  }
-  
-  /* Primary color variable for tailwind */
-  .bg-primary {
-    background-color: #2A5D3C;
-  }
-  .text-primary {
-    color: #2A5D3C;
-  }
-  .border-primary {
-    border-color: #2A5D3C;
-  }
-  .ring-primary {
-    --tw-ring-color: #2A5D3C;
-  }
-`}} />
+      {/* Main Content */}
+      <main className="flex-1 bg-gray-50">
+        <Outlet />
+      </main>
+      
+      {/* Footer */}
+      <footer className="bg-white border-t py-6">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-4 md:mb-0">
+              <p className="text-sm text-gray-600">
+                &copy; {new Date().getFullYear()} HelloNeighbor. All rights reserved.
+              </p>
+            </div>
+            <div className="flex space-x-4">
+              <Link to="/about" className="text-sm text-gray-600 hover:text-primary">
+                About
+              </Link>
+              <Link to="/contact" className="text-sm text-gray-600 hover:text-primary">
+                Contact
+              </Link>
+              <Link to="/privacy" className="text-sm text-gray-600 hover:text-primary">
+                Privacy
+              </Link>
+              <Link to="/terms" className="text-sm text-gray-600 hover:text-primary">
+                Terms
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
