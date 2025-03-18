@@ -1,4 +1,5 @@
 // src/features/listings/components/FilterPanel.tsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Sliders, X, Check, ChevronDown, Star } from 'lucide-react';
 
@@ -401,7 +402,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       )}
       
       {/* Animation styles */}
-      <style>{`
+      <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
