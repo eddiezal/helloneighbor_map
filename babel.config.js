@@ -1,9 +1,11 @@
 // babel.config.js
-module.exports = {
+export default {
     presets: [
       ['@babel/preset-env', { targets: { node: 'current' } }],
-      '@babel/preset-typescript',
-      ['@babel/preset-react', { runtime: 'automatic' }]
+      ['@babel/preset-react', { runtime: 'automatic' }],
+      '@babel/preset-typescript'
     ],
-    plugins: []
+    assumptions: {
+      setPublicClassFields: true
+    }
   };

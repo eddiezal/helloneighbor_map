@@ -11,7 +11,8 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:listview": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/features/listings/components/__tests__",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:debug": "node --experimental-vm-modules node_modules/jest/bin/jest.js --verbose"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
@@ -63,26 +64,35 @@
       "^.+\\.(ts|tsx)$": [
         "ts-jest",
         {
-          "useESM": true
+          "useESM": true,
+          "tsconfig": "tsconfig.json"
         }
       ],
-      "^.+\\.(js|jsx)$": [
-        "babel-jest",
-        {
-          "presets": [
-            ["@babel/preset-env", { "targets": { "node": "current" } }],
-            ["@babel/preset-react", { "runtime": "automatic" }]
-          ]
-        }
-      ]
+      "^.+\\.(js|jsx)$": "babel-jest"
     },
-    "extensionsToTreatAsEsm": [".ts", ".tsx"],
+    "extensionsToTreatAsEsm": [
+      ".ts",
+      ".tsx"
+    ],
     "moduleNameMapper": {
       "\\.(css|less|scss|sass)$": "identity-obj-proxy",
       "^@/(.*)$": "<rootDir>/src/$1"
     },
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
-    "testMatch": ["**/__tests__/**/*.[jt]s?(x)", "**/?(*.)+(spec|test).[jt]s?(x)"],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.[jt]s?(x)",
+      "**/?(*.)+(spec|test).[jt]s?(x)"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@react-google-maps|lucide-react|react-router-dom)/)"
+    ],
     "collectCoverageFrom": [
       "src/**/*.{js,jsx,ts,tsx}",
       "!src/**/*.d.ts",
