@@ -2,12 +2,8 @@
 import React from 'react';
 import { useAppContext } from '../core/context/AppContext';
 import MapView from '../features/map/components/MapView';
-import ListView from '../features/listings/components/ListView'; // Updated import path
+import ListView from '../features/listings/components/ListView';
 
-/**
- * The main homepage that displays either the map or list view
- * based on the user's selection
- */
 const HomePage: React.FC = () => {
   const { activeView } = useAppContext();
   

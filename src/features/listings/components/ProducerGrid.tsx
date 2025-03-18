@@ -1,18 +1,10 @@
 // src/features/listings/components/ProducerGrid.tsx
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Producer } from '../../../core/types/Producer';
-import { Star, Clock, Heart, MessageCircle, MapPin, Shield } from 'lucide-react';
-
-// Category color mapping (consistent across the app)
-const CATEGORY_COLORS = {
-  baker: '#FF5252',     // Red
-  gardener: '#4CAF50',  // Green
-  eggs: '#FFC107',      // Amber/Yellow
-  homecook: '#9C27B0',  // Purple
-  specialty: '#FF9800', // Orange
-  default: '#2196F3'    // Blue (fallback)
-};
+import { Star, Heart, MessageCircle, MapPin, Shield } from 'lucide-react';
+import { CATEGORY_COLORS } from '../../map/constants';
 
 interface ProducerGridProps {
   producers: Producer[];
@@ -89,7 +81,7 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
       default: return type;
     }
   };
-
+  
   // Navigate to producer detail
   const viewProfile = () => {
     navigate(`/producer/${producer.id}`);
@@ -160,8 +152,6 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
           >
             <MessageCircle className="w-5 h-5 text-primary" />
           </button>
-          
-          {/* We could add more quick action buttons here */}
         </div>
         
         {/* Producer info on the bottom of the image */}

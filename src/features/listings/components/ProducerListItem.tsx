@@ -1,18 +1,10 @@
 // src/features/listings/components/ProducerListItem.tsx
-import React, { useState, useRef, useEffect } from 'react';
+
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Producer } from '../../../core/types/Producer';
-import { Star, Clock, Heart, MessageCircle, ChevronDown, ChevronUp, MapPin, Shield, Share2, Award } from 'lucide-react';
-
-// Category color mapping (consistent across the app)
-const CATEGORY_COLORS = {
-  baker: '#FF5252',     // Red
-  gardener: '#4CAF50',  // Green
-  eggs: '#FFC107',      // Amber/Yellow
-  homecook: '#9C27B0',  // Purple
-  specialty: '#FF9800', // Orange
-  default: '#2196F3'    // Blue (fallback)
-};
+import { Star, Heart, MessageCircle, ChevronDown, MapPin, Shield, Share2, Award } from 'lucide-react';
+import { CATEGORY_COLORS } from '../../map/constants';
 
 interface ProducerListItemProps {
   producer: Producer;
@@ -25,6 +17,9 @@ const ProducerListItem: React.FC<ProducerListItemProps> = ({ producer }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const expandedContentRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  
+  // Generate stable random viewers count (won't change on re-renders)
+  const viewersCount = useMemo(() => Math.floor(Math.random() * 5) + 1, []);
   
   // For 3D tilt effect
   const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
@@ -91,9 +86,6 @@ const ProducerListItem: React.FC<ProducerListItemProps> = ({ producer }) => {
     });
   };
   
-  // Random viewers count for social proof
-  const viewersCount = Math.floor(Math.random() * 5) + 1;
-  
   // Toggle expanded state with animation
   const toggleExpanded = () => {
     setExpanded(prev => !prev);
@@ -139,6 +131,12 @@ const ProducerListItem: React.FC<ProducerListItemProps> = ({ producer }) => {
               src={img} 
               alt={`${producer.name} product ${index + 1}`}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback for image loading errors
+                const target = e.target as HTMLImageElement;
+                target.onerror = null;
+                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f5f5f5'/%3E%3C/svg%3E";
+              }}
             />
           </div>
         ))}
@@ -150,6 +148,15 @@ const ProducerListItem: React.FC<ProducerListItemProps> = ({ producer }) => {
   const viewProfile = () => {
     navigate(`/producer/${producer.id}`);
   };
+  
+  // Generate stable random item quantities
+  const getItemQuantity = useMemo(() => {
+    const quantities: Record<string, number> = {};
+    producer.items.forEach(item => {
+      quantities[item] = Math.floor(Math.random() * 10) + 1;
+    });
+    return quantities;
+  }, [producer.items]);
   
   return (
     <div 
@@ -177,6 +184,12 @@ const ProducerListItem: React.FC<ProducerListItemProps> = ({ producer }) => {
                 src={producer.images[0]} 
                 alt={producer.name}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback for image loading errors
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f5f5f5'/%3E%3C/svg%3E";
+                }}
               />
             ) : (
               <span className="text-2xl">{producer.icon}</span>
@@ -264,8 +277,7 @@ const ProducerListItem: React.FC<ProducerListItemProps> = ({ producer }) => {
               >
                 {item}
                 <span className="ml-2 text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">
-                  {/* Random available count */}
-                  {Math.floor(Math.random() * 10) + 1}
+                  {getItemQuantity[item]}
                 </span>
               </div>
             ))}
@@ -281,10 +293,6 @@ const ProducerListItem: React.FC<ProducerListItemProps> = ({ producer }) => {
           
           {/* Action buttons with micro-interactions */}
           <div className="flex space-x-2 mt-4">
-            <button 
-              className="flex-1 bg-primary text-white py-2.5 px-4 rounded-xl text-sm font-medium transform transition-transform hover:translate-y-[-2px] hover:shadow-md active:translate-y-0"
-              onClick={viewProfile}
-            >
             <button 
               className="flex-1 bg-primary text-white py-2.5 px-4 rounded-xl text-sm font-medium transform transition-transform hover:translate-y-[-2px] hover:shadow-md active:translate-y-0"
               onClick={viewProfile}
@@ -316,20 +324,22 @@ const ProducerListItem: React.FC<ProducerListItemProps> = ({ producer }) => {
         </div>
       </div>
       
-      {/* Animation for heart button */}
-      <style jsx>{`
-        @keyframes heartbeat {
-          0% { transform: scale(1); }
-          25% { transform: scale(1.3); }
-          50% { transform: scale(1); }
-          75% { transform: scale(1.3); }
-          100% { transform: scale(1); }
-        }
-        
-        .animate-heartbeat {
-          animation: heartbeat 0.5s ease;
-        }
-      `}</style>
+      {/* Animation styles */}
+      <style>
+        {`
+          @keyframes heartbeat {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.3); }
+            50% { transform: scale(1); }
+            75% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+          }
+          
+          .animate-heartbeat {
+            animation: heartbeat 0.5s ease;
+          }
+        `}
+      </style>
     </div>
   );
 };
