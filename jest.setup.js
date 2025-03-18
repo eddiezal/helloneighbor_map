@@ -26,8 +26,8 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// If you're using Google Maps
-global.google = {
+// Mock for Google Maps
+window.google = {
   maps: {
     Map: class MockMap {
       constructor() {}
@@ -49,6 +49,9 @@ global.google = {
     event: {
       addListener: jest.fn(),
       removeListener: jest.fn()
+    },
+    SymbolPath: {
+      CIRCLE: 0
     }
   }
 };
