@@ -1,3 +1,4 @@
+// Move src/types/Producer.ts to src/core/types/Producer.ts
 export type AvailabilityStatus = 'now' | 'tomorrow' | 'weekend';
 export type ProducerType = 'gardener' | 'baker' | 'eggs' | 'homecook' | 'specialty';
 
@@ -6,7 +7,7 @@ export interface Producer {
   name: string;
   type: ProducerType;
   icon: string;
-  images: string[]; // Add this new array for multiple images
+  images: string[];
   description: string;
   rating: number;
   reviews: number;
@@ -17,6 +18,6 @@ export interface Producer {
   availability: AvailabilityStatus;
   featured: boolean;
   items: string[];
-  profileImage?: string; // Keep for backward compatibility
-  productImages: string[]; // Keep existing product images
+  profileImage?: string;
+  productImages: string[];
 }

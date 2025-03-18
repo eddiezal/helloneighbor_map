@@ -1,19 +1,13 @@
 // src/core/context/AppContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Producer } from '../../features/producers/types/producer.types';
-import { Category } from '../../data/mockCategories';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { Producer } from '../types/Producer';
+import { Category } from '../types/Category';
+import { ViewMode, SortOption, FilterAvailability } from '../types/ui.types';
+import { mockProducers } from '../../data/mockProducers';
+import { mockCategories } from '../../data/mockCategories';
 
-// Import mock data (will be replaced with API calls later)
-import { producers as mockProducers } from '../../data/mockProducers';
-import { categories as mockCategories } from '../../data/mockCategories';
-
-// Define available views
-export type ViewMode = 'map' | 'list';
-export type SortOption = 'distance' | 'rating' | 'reviews' | 'name' | 'availability';
-export type FilterAvailability = 'now' | 'all';
-
-// Define context type
-interface AppContextType {
+// Define the context type
+export interface AppContextType {
   // Data
   producers: Producer[];
   categories: Category[];
@@ -34,12 +28,17 @@ interface AppContextType {
   sortBy: SortOption;
   setSortBy: (option: SortOption) => void;
   
-  // Filtered and sorted producers
+  // Computed values
   filteredProducers: Producer[];
+  featuredProducers: Producer[];
   
   // Selected producer
   selectedProducer: Producer | null;
   setSelectedProducer: (producer: Producer | null) => void;
+  
+  // Feature flags
+  isMapEnabled: boolean;
+  isAuthEnabled: boolean;
 }
 
 // Create context with a default undefined value
@@ -69,6 +68,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // State for selected producer
   const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
   
+  // Feature flags
+  const [isMapEnabled] = useState(true);
+  const [isAuthEnabled] = useState(false);
+  
   // Fetch producers (mock for now, will be replaced with API call)
   useEffect(() => {
     // Simulate API call
@@ -88,8 +91,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     fetchProducers();
   }, []);
   
-  // Filter producers based on current filters
-  const filteredProducers = React.useMemo(() => {
+  // Filtered producers based on current filters
+  const filteredProducers = useMemo(() => {
     return producers.filter(producer => {
       // Apply category filter
       if (selectedCategory !== 'all' && producer.type !== selectedCategory) {
@@ -141,8 +144,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     });
   }, [producers, selectedCategory, filterAvailability, searchQuery, sortBy]);
   
+  // Featured producers
+  const featuredProducers = useMemo(() => {
+    return producers.filter(p => p.featured && p.availability === 'now').slice(0, 5);
+  }, [producers]);
+  
   // Context value
-  const value = {
+  const value: AppContextType = {
     // Data
     producers,
     categories,
@@ -163,12 +171,17 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     sortBy,
     setSortBy,
     
-    // Filtered producers
+    // Computed values
     filteredProducers,
+    featuredProducers,
     
     // Selected producer
     selectedProducer,
     setSelectedProducer,
+    
+    // Feature flags
+    isMapEnabled,
+    isAuthEnabled
   };
   
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

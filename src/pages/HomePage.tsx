@@ -1,34 +1,25 @@
+// src/pages/HomePage.tsx
 import React from 'react';
 import { useAppContext } from '../core/context/AppContext';
 import MapView from '../features/map/components/MapView';
 import ListView from '../features/listings/components/ListView';
 
+/**
+ * The main homepage that displays either the map or list view
+ * based on the user's selection
+ */
 const HomePage: React.FC = () => {
-  const { 
-    producers,
-    viewMode, 
-    selectedCategory,
-    filterAvailability,
-    isLoading
-  } = useAppContext();
+  const { activeView } = useAppContext();
   
   return (
     <div className="h-full">
-      {viewMode === 'map' ? (
+      {activeView === 'map' ? (
         <div className="h-[calc(100vh-208px)] md:h-[calc(100vh-200px)]">
-          <MapView 
-            producers={producers} 
-            selectedCategory={selectedCategory}
-            filterAvailability={filterAvailability}
-          />
+          <MapView />
         </div>
       ) : (
         <div className="container mx-auto px-4 py-4">
-          <ListView 
-            producers={producers}
-            selectedCategory={selectedCategory}
-            filterAvailability={filterAvailability}
-          />
+          <ListView />
         </div>
       )}
     </div>
