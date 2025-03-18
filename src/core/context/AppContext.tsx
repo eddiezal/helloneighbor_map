@@ -1,76 +1,95 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
-import { Producer } from '../../features/producers/types/Producer.types';
-import { producers as mockProducers } from '../../features/producers/data/mockProducers';
+// src/core/context/AppContext.tsx
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Producer } from '../../features/producers/types/producer.types';
+import { Category } from '../../data/mockCategories';
 
-interface AppContextProps {
+// Import mock data (will be replaced with API calls later)
+import { producers as mockProducers } from '../../data/mockProducers';
+import { categories as mockCategories } from '../../data/mockCategories';
+
+// Define available views
+export type ViewMode = 'map' | 'list';
+export type SortOption = 'distance' | 'rating' | 'reviews' | 'name' | 'availability';
+export type FilterAvailability = 'now' | 'all';
+
+// Define context type
+interface AppContextType {
+  // Data
   producers: Producer[];
+  categories: Category[];
+  
+  // View state
+  activeView: ViewMode;
+  setActiveView: (view: ViewMode) => void;
+  
+  // Filters
   selectedCategory: string;
-  filterAvailability: string;
-  viewMode: 'map' | 'list';
-  searchQuery: string;
-  isLoading: boolean;
   setSelectedCategory: (category: string) => void;
-  setFilterAvailability: (availability: string) => void;
-  setViewMode: (mode: 'map' | 'list') => void;
+  filterAvailability: FilterAvailability;
+  setFilterAvailability: (availability: FilterAvailability) => void;
+  searchQuery: string;
   setSearchQuery: (query: string) => void;
+  
+  // Sorting
+  sortBy: SortOption;
+  setSortBy: (option: SortOption) => void;
+  
+  // Filtered and sorted producers
+  filteredProducers: Producer[];
+  
+  // Selected producer
   selectedProducer: Producer | null;
   setSelectedProducer: (producer: Producer | null) => void;
-  isAuthenticated: boolean;
-  user: any | null; // Will be typed properly in the auth feature
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
 }
 
-const AppContext = createContext<AppContextProps | undefined>(undefined);
+// Create context with a default undefined value
+const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const useAppContext = () => {
-  const context = useContext(AppContext);
-  if (context === undefined) {
-    throw new Error('useAppContext must be used within an AppProvider');
-  }
-  return context;
-};
-
+// Context provider component
 interface AppProviderProps {
   children: ReactNode;
 }
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  // State management
-  const [producers, setProducers] = useState<Producer[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [filterAvailability, setFilterAvailability] = useState('all');
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  // State for data
+  const [producers, setProducers] = useState<Producer[]>(mockProducers);
+  const [categories] = useState<Category[]>(mockCategories);
+  
+  // State for view
+  const [activeView, setActiveView] = useState<ViewMode>('map');
+  
+  // State for filters
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [filterAvailability, setFilterAvailability] = useState<FilterAvailability>('now');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // State for sorting
+  const [sortBy, setSortBy] = useState<SortOption>('distance');
+  
+  // State for selected producer
   const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
   
-  // Authentication state (will be expanded in auth feature)
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any | null>(null);
-  
-  // Fetch producers (simulated)
+  // Fetch producers (mock for now, will be replaced with API call)
   useEffect(() => {
+    // Simulate API call
     const fetchProducers = async () => {
-      setIsLoading(true);
       try {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
         // In a real app, this would be an API call
+        // const response = await api.getProducers();
+        // setProducers(response.data);
+        
+        // Using mock data for now
         setProducers(mockProducers);
       } catch (error) {
         console.error('Error fetching producers:', error);
-      } finally {
-        setIsLoading(false);
       }
     };
     
     fetchProducers();
   }, []);
   
-  // Filter producers based on criteria
-  const filteredProducers = useMemo(() => {
+  // Filter producers based on current filters
+  const filteredProducers = React.useMemo(() => {
     return producers.filter(producer => {
       // Apply category filter
       if (selectedCategory !== 'all' && producer.type !== selectedCategory) {
@@ -97,60 +116,71 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       }
       
       return true;
+    }).sort((a, b) => {
+      // Apply sorting
+      switch (sortBy) {
+        case 'distance':
+          return a.distance - b.distance;
+        case 'rating':
+          return b.rating - a.rating;
+        case 'reviews':
+          return b.reviews - a.reviews;
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'availability': {
+          // Sort by availability priority: 'now', 'tomorrow', 'weekend'
+          const priority = { now: 0, tomorrow: 1, weekend: 2 };
+          return (
+            priority[a.availability as keyof typeof priority] - 
+            priority[b.availability as keyof typeof priority]
+          );
+        }
+        default:
+          return a.distance - b.distance;
+      }
     });
-  }, [producers, selectedCategory, filterAvailability, searchQuery]);
+  }, [producers, selectedCategory, filterAvailability, searchQuery, sortBy]);
   
-  // Authentication methods (to be implemented in auth feature)
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simulate successful login (will be replaced with actual API call)
-      setIsAuthenticated(true);
-      setUser({
-        id: 1,
-        name: 'Test User',
-        email: email
-      });
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-  };
-  
+  // Context value
   const value = {
-    producers: filteredProducers,
+    // Data
+    producers,
+    categories,
+    
+    // View state
+    activeView,
+    setActiveView,
+    
+    // Filters
     selectedCategory,
-    filterAvailability,
-    viewMode,
-    searchQuery,
-    isLoading,
     setSelectedCategory,
+    filterAvailability,
     setFilterAvailability,
-    setViewMode,
+    searchQuery,
     setSearchQuery,
+    
+    // Sorting
+    sortBy,
+    setSortBy,
+    
+    // Filtered producers
+    filteredProducers,
+    
+    // Selected producer
     selectedProducer,
     setSelectedProducer,
-    isAuthenticated,
-    user,
-    login,
-    logout
   };
   
-  return (
-    <AppContext.Provider value={value}>
-      {children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
-export default AppContext;
+// Custom hook to use the app context
+export const useAppContext = (): AppContextType => {
+  const context = useContext(AppContext);
+  
+  if (context === undefined) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  
+  return context;
+};
