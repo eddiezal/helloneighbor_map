@@ -1,33 +1,45 @@
 // src/core/router.tsx
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import Home from '../pages/Home';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import Map from '../pages/Map';
-import Browse from '../pages/Browse';
-import ProducerDetail from '../pages/ProducerDetail';
-import UserProfile from '../pages/UserProfile';
-import Settings from '../pages/Settings';
-import MainLayout from '../features/ui/layout/MainLayout';
-import ProtectedRoute from '../features/auth/components/ProtectedRoute';
+import { createBrowserRouter } from 'react-router-dom';
+import AppLayout from '../features/ui/layout/AppLayout';
+import MapView from '../components/Map/MapView'; // Still using the original component
+import ListView from '../components/ListView/ListView'; // Still using the original component
 
-// Create the browser router
-const router = createBrowserRouter([
+// We'll gradually migrate to these as we move components
+// import MapView from '../features/map/components/MapView';
+// import ListView from '../features/listings/components/ListView';
+
+// Create placeholder pages for future routes
+const Home = () => <div>Home Page (Placeholder)</div>;
+const ProducerDetail = () => <div>Producer Detail Page (Placeholder)</div>;
+const Login = () => <div>Login Page (Placeholder)</div>;
+const Register = () => <div>Register Page (Placeholder)</div>;
+const UserProfile = () => <div>User Profile Page (Placeholder)</div>;
+const Settings = () => <div>Settings Page (Placeholder)</div>;
+
+export const router = createBrowserRouter([
   {
     path: '/',
-    element: <MainLayout />,
+    element: <AppLayout />,
     children: [
       {
         index: true,
         element: <Home />,
       },
       {
-        path: 'browse',
-        element: <Browse />,
+        path: 'map',
+        element: <MapView 
+          producers={[]} 
+          selectedCategory="all" 
+          filterAvailability="now" 
+        />,
       },
       {
-        path: 'map',
-        element: <Map />,
+        path: 'browse',
+        element: <ListView 
+          producers={[]} 
+          selectedCategory="all" 
+          filterAvailability="now" 
+        />,
       },
       {
         path: 'producers/:id',
@@ -35,19 +47,11 @@ const router = createBrowserRouter([
       },
       {
         path: 'profile',
-        element: (
-          <ProtectedRoute>
-            <UserProfile />
-          </ProtectedRoute>
-        ),
+        element: <UserProfile />,
       },
       {
         path: 'settings',
-        element: (
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        ),
+        element: <Settings />,
       },
     ],
   },
@@ -60,9 +64,3 @@ const router = createBrowserRouter([
     element: <Register />,
   },
 ]);
-
-const AppRouter = () => {
-  return <RouterProvider router={router} />;
-};
-
-export default AppRouter;
