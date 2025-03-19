@@ -1,10 +1,99 @@
-// src/features/listings/components/FilterPanel.tsx (continued)
-  // Reset filters to default
+// src/features/listings/components/FilterPanel.tsx
+import React, { useState, useRef, useEffect } from 'react';
+import { Sliders, X, Check, ChevronDown, Star } from 'lucide-react';
+
+export interface FilterState {
+  maxWalkTime: number;
+  minRating: number;
+  availability: string[];
+  dietaryOptions: string[];
+  priceRange: [number, number];
+  categories: string[];
+  showFeaturedOnly: boolean;
+  showTopRatedOnly: boolean;
+}
+
+interface FilterPanelProps {
+  onApplyFilters: (filters: FilterState) => void;
+  initialFilters?: Partial<FilterState>;
+  activeFiltersCount?: number;
+}
+
+const FilterPanel: React.FC<FilterPanelProps> = ({
+  onApplyFilters,
+  initialFilters = {},
+  activeFiltersCount = 0
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  
+  const defaultFilterState: FilterState = {
+    maxWalkTime: 30,
+    minRating: 0,
+    availability: [],
+    dietaryOptions: [],
+    priceRange: [1, 5],
+    categories: [],
+    showFeaturedOnly: false,
+    showTopRatedOnly: false
+  };
+  
+  const [filters, setFilters] = useState<FilterState>({
+    ...defaultFilterState,
+    ...initialFilters
+  });
+  
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    
+    setFilters(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : 
+              type === 'number' ? parseInt(value, 10) : 
+              value
+    }));
+  };
+  
+  const handleArrayFilterChange = (filterName: keyof FilterState, value: string) => {
+    setFilters(prev => {
+      const currentValues = prev[filterName] as string[];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter(v => v !== value)
+        : [...currentValues, value];
+      
+      return {
+        ...prev,
+        [filterName]: newValues
+      };
+    });
+  };
+  
+  const applyFilters = () => {
+    onApplyFilters(filters);
+    setIsOpen(false);
+  };
+  
   const resetFilters = () => {
     setFilters(defaultFilterState);
   };
   
-  // Toggle a collapsible section
   const toggleSection = (section: string) => {
     setActiveSection(prev => prev === section ? null : section);
   };

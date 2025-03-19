@@ -217,5 +217,8 @@ test('updates rating filter when rating option is clicked', async () => {
     
     // Check that onApplyFilters was called with both dietary options
     expect(mockApplyFilters).toHaveBeenCalledWith(
-      expect.objectContaining({ 
-        dietaryOptions: expect.arrayContaining(['organic', 've
+        expect(mockApplyFilters).toHaveBeenCalledWith(
+            expect.objectContaining({ 
+              dietaryOptions: expect.arrayContaining(['organic', 'vegan']) 
+            })
+          );

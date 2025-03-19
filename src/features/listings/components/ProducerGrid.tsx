@@ -4,14 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { Producer } from '../../../core/types/Producer';
 import { Star, Heart, Clock, MapPin } from 'lucide-react';
 
-// Category color mapping
 const CATEGORY_COLORS = {
-  baker: '#FF5252',     // Red
-  gardener: '#4CAF50',  // Green
-  eggs: '#FFC107',      // Amber/Yellow
-  homecook: '#9C27B0',  // Purple
-  specialty: '#FF9800', // Orange
-  default: '#2196F3'    // Blue (fallback)
+  baker: '#FF5252',
+  gardener: '#4CAF50',
+  eggs: '#FFC107',
+  homecook: '#9C27B0',
+  specialty: '#FF9800',
+  default: '#2196F3'
 };
 
 interface ProducerGridProps {
@@ -28,7 +27,6 @@ const ProducerGrid: React.FC<ProducerGridProps> = ({ producers }) => {
   );
 };
 
-// The individual card component used in the grid
 interface ProducerGridCardProps {
   producer: Producer;
 }
@@ -37,7 +35,6 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
   const [favorited, setFavorited] = useState(false);
   const navigate = useNavigate();
   
-  // Availability badge color and text
   const getAvailabilityInfo = () => {
     switch (producer.availability) {
       case 'now':
@@ -52,22 +49,18 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
   };
   
   const availability = getAvailabilityInfo();
-  
-  // Get category color
   const categoryColor = CATEGORY_COLORS[producer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default;
   
-  // Toggle favorite status
   const toggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     setFavorited(!favorited);
   };
   
-  // Navigate to producer detail
   const viewProfile = () => {
+    // This is the function called by the View Profile button
     navigate(`/producer/${producer.id}`);
   };
   
-  // Format category name
   const getCategoryName = (type: string) => {
     switch(type) {
       case 'baker': return 'Baker';
@@ -81,7 +74,6 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
   
   return (
     <div className="rounded-lg overflow-hidden border bg-white hover:shadow-md transition-shadow duration-200">
-      {/* Card header with image */}
       <div className="relative h-48">
         {producer.images && producer.images.length > 0 ? (
           <img 
@@ -98,7 +90,6 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
           </div>
         )}
         
-        {/* Category indicator */}
         <div 
           className="absolute top-3 left-3 text-xs px-2 py-1 rounded-full font-medium"
           style={{ backgroundColor: 'white', color: categoryColor }}
@@ -106,7 +97,6 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
           {getCategoryName(producer.type)}
         </div>
         
-        {/* Favorite button */}
         <button 
           className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center bg-white shadow-sm ${
             favorited ? 'text-red-500' : 'text-gray-400'
@@ -117,7 +107,6 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
           <Heart className={`w-4 h-4 ${favorited ? 'fill-current' : ''}`} />
         </button>
         
-        {/* Availability badge */}
         <div 
           className="absolute bottom-3 left-3 text-xs px-2 py-1 rounded-full font-medium flex items-center"
           style={{ backgroundColor: 'white', color: availability.color }}
@@ -130,7 +119,6 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
         </div>
       </div>
       
-      {/* Card content */}
       <div className="p-4">
         <div className="flex justify-between items-start">
           <h3 className="font-semibold text-gray-900 truncate">{producer.name}</h3>
@@ -144,7 +132,6 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
           {producer.description}
         </p>
         
-        {/* Available items preview */}
         <div className="mt-3 flex flex-wrap gap-1">
           {producer.items.slice(0, 3).map((item, index) => (
             <span 
@@ -161,13 +148,11 @@ const ProducerGridCard: React.FC<ProducerGridCardProps> = ({ producer }) => {
           )}
         </div>
         
-        {/* Walking time */}
         <div className="mt-3 text-sm text-gray-500 flex items-center">
           <Clock className="w-4 h-4 mr-1" />
           <span>{producer.walkTime} min walk</span>
         </div>
         
-        {/* Action button */}
         <button 
           className="mt-3 w-full bg-primary text-white py-2 rounded-full text-sm font-medium"
           onClick={viewProfile}

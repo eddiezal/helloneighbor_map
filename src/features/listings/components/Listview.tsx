@@ -1,15 +1,18 @@
 // src/features/listings/components/ListView.tsx
 import React, { useState, useEffect } from 'react';
-import { Filter, Search, Grid, List as ListIcon } from 'lucide-react';
+import { Filter, Search, Grid, List } from 'lucide-react';
 import ProducerListItem from './ProducerListItem';
 import ProducerGrid from './ProducerGrid';
 import FilterPanel, { FilterState } from './FilterPanel';
 
-// Import from AppContext
-import { useAppContext } from '../../../core/context/AppContext';
-
-// Define sort options
-export type SortOption = 'distance' | 'rating' | 'reviews' | 'name' | 'availability';
+// Mock the context for now - you can replace this with your actual context import
+const useAppContext = () => ({
+  filteredProducers: [],
+  searchQuery: '',
+  setSearchQuery: (query: string) => {},
+  sortBy: 'distance' as const,
+  setSortBy: (option: any) => {}
+});
 
 const ListView: React.FC = () => {
   // Get data from context
@@ -22,26 +25,6 @@ const ListView: React.FC = () => {
   const [activeFilters, setActiveFilters] = useState<FilterState | null>(null);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   
-  // Calculate active filters count
-  useEffect(() => {
-    if (!activeFilters) {
-      setActiveFiltersCount(0);
-      return;
-    }
-    
-    let count = 0;
-    
-    if (activeFilters.maxWalkTime !== 30) count++;
-    if (activeFilters.minRating > 0) count++;
-    if (activeFilters.availability.length > 0) count++;
-    if (activeFilters.dietaryOptions.length > 0) count++;
-    if (activeFilters.categories.length > 0) count++;
-    if (activeFilters.showFeaturedOnly) count++;
-    if (activeFilters.showTopRatedOnly) count++;
-    
-    setActiveFiltersCount(count);
-  }, [activeFilters]);
-  
   // Toggle view mode
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'list' ? 'grid' : 'list');
@@ -53,7 +36,7 @@ const ListView: React.FC = () => {
   };
   
   // Handle sort change
-  const handleSortChange = (option: SortOption) => {
+  const handleSortChange = (option: any) => {
     setSortBy(option);
     setShowSortDropdown(false);
   };
@@ -61,8 +44,6 @@ const ListView: React.FC = () => {
   // Handle search input
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    
-    // Simulate loading state
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
@@ -72,21 +53,10 @@ const ListView: React.FC = () => {
   // Handle filter application
   const handleApplyFilters = (filters: FilterState) => {
     setActiveFilters(filters);
-    // You would apply these filters to your data
   };
-  
-  // Create skeleton loading UI
-  const renderSkeleton = () => (
-    <div className="animate-pulse space-y-4">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>
-      ))}
-    </div>
-  );
   
   return (
     <div className="pt-3 px-4 bg-gray-50 min-h-full">
-      {/* List Header with Search and Controls */}
       <div className="bg-white rounded-lg shadow-sm mb-4">
         <div className="p-4 border-b">
           <div className="flex justify-between items-center mb-4">
@@ -95,14 +65,12 @@ const ListView: React.FC = () => {
             </h2>
             
             <div className="flex gap-2">
-              {/* Enhanced Filter Panel */}
               <FilterPanel 
                 onApplyFilters={handleApplyFilters}
                 initialFilters={activeFilters || undefined}
                 activeFiltersCount={activeFiltersCount}
               />
 
-              {/* View mode toggle */}
               <button 
                 onClick={toggleViewMode}
                 className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
@@ -110,11 +78,10 @@ const ListView: React.FC = () => {
               >
                 {viewMode === 'list' ? 
                   <Grid className="w-5 h-5" /> : 
-                  <ListIcon className="w-5 h-5" />
+                  <List className="w-5 h-5" />
                 }
               </button>
               
-              {/* Sort dropdown */}
               <div className="relative">
                 <button 
                   className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center"
@@ -139,24 +106,6 @@ const ListView: React.FC = () => {
                       >
                         Highest Rated
                       </button>
-                      <button 
-                        className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 w-full text-left ${sortBy === 'reviews' ? 'bg-gray-100 font-medium' : ''}`}
-                        onClick={() => handleSortChange('reviews')}
-                      >
-                        Most Reviewed
-                      </button>
-                      <button 
-                        className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 w-full text-left ${sortBy === 'name' ? 'bg-gray-100 font-medium' : ''}`}
-                        onClick={() => handleSortChange('name')}
-                      >
-                        Alphabetical
-                      </button>
-                      <button 
-                        className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 w-full text-left ${sortBy === 'availability' ? 'bg-gray-100 font-medium' : ''}`}
-                        onClick={() => handleSortChange('availability')}
-                      >
-                        Availability
-                      </button>
                     </div>
                   </div>
                 )}
@@ -164,7 +113,6 @@ const ListView: React.FC = () => {
             </div>
           </div>
           
-          {/* Search input */}
           <div className="relative">
             <input
               type="text"
@@ -186,36 +134,13 @@ const ListView: React.FC = () => {
           </div>
         </div>
         
-        {/* Current Sort Indicator */}
-        <div className="px-4 py-2 border-b text-sm flex justify-between items-center">
-          <div className="flex items-center text-gray-600">
-            <span>Sort:</span>
-            <button 
-              className="ml-2 flex items-center font-medium text-primary"
-              onClick={toggleSortDropdown}
-            >
-              {(() => {
-                switch(sortBy) {
-                  case 'distance': return 'Closest First';
-                  case 'rating': return 'Highest Rated';
-                  case 'reviews': return 'Most Reviewed';
-                  case 'name': return 'Alphabetical';
-                  case 'availability': return 'Availability';
-                  default: return 'Closest First';
-                }
-              })()}
-            </button>
-          </div>
-          
-          <div className="text-gray-600">
-            {filteredProducers.length} result{filteredProducers.length !== 1 ? 's' : ''}
-          </div>
-        </div>
-        
-        {/* Loading or Content */}
         <div className="p-4">
           {isLoading ? (
-            renderSkeleton()
+            <div className="animate-pulse space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>
+              ))}
+            </div>
           ) : (
             <>
               {filteredProducers.length === 0 ? (
