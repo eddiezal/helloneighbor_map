@@ -1,22 +1,24 @@
 // src/features/listings/components/__tests__/ProducerListItem.test.tsx
 import { jest } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 import ProducerListItem from '../ProducerListItem';
 import { Producer } from '../../../../core/types/Producer';
+import { BrowserRouter } from 'react-router-dom';
 
 // Define the mock navigate function
 const mockNavigate = jest.fn();
 
-// Mock react-router-dom
-jest.mock('react-router-dom', () => {
-  // Create a manual mock that includes what we need
-  return {
-    BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    useNavigate: () => mockNavigate,
-    Link: ({ children, to }: { children: React.ReactNode, to: string }) => <a href={to}>{children}</a>
-  };
-});
+// Mock only useNavigate, not the whole module
+jest.mock('react-router-dom', () => ({
+  __esModule: true,
+  // Explicitly list all components we need instead of spreading
+  BrowserRouter: jest.requireActual('react-router-dom').BrowserRouter,
+  Routes: jest.requireActual('react-router-dom').Routes,
+  Route: jest.requireActual('react-router-dom').Route,
+  Link: jest.requireActual('react-router-dom').Link,
+  // Add the mocked hooks
+  useNavigate: () => mockNavigate
+}));
 
 // Simple producer mock
 const mockProducer: Producer = {
@@ -38,18 +40,17 @@ const mockProducer: Producer = {
   productImages: ['product1.jpg', 'product2.jpg']
 };
 
-// Test wrapper to provide router context
-const renderWithRouter = (ui: React.ReactElement) => {
-  return render(ui, { wrapper: BrowserRouter });
-};
-
 describe('ProducerListItem Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   test('renders basic producer information correctly', () => {
-    renderWithRouter(<ProducerListItem producer={mockProducer} />);
+    render(
+      <BrowserRouter>
+        <ProducerListItem producer={mockProducer} />
+      </BrowserRouter>
+    );
     
     // Check that the producer name is displayed
     expect(screen.getByText('Green Garden')).toBeInTheDocument();
@@ -66,12 +67,20 @@ describe('ProducerListItem Component', () => {
   });
 
   test('displays availability badge with correct status', () => {
-    renderWithRouter(<ProducerListItem producer={mockProducer} />);
+    render(
+      <BrowserRouter>
+        <ProducerListItem producer={mockProducer} />
+      </BrowserRouter>
+    );
     expect(screen.getByText('Available now')).toBeInTheDocument();
   });
   
   test('toggles expanded state when clicked', () => {
-    renderWithRouter(<ProducerListItem producer={mockProducer} />);
+    render(
+      <BrowserRouter>
+        <ProducerListItem producer={mockProducer} />
+      </BrowserRouter>
+    );
     
     // Initially not expanded - action buttons not visible
     expect(screen.queryByText('View Profile')).not.toBeInTheDocument();
@@ -84,7 +93,11 @@ describe('ProducerListItem Component', () => {
   });
   
   test('toggles favorite state when heart button is clicked', () => {
-    renderWithRouter(<ProducerListItem producer={mockProducer} />);
+    render(
+      <BrowserRouter>
+        <ProducerListItem producer={mockProducer} />
+      </BrowserRouter>
+    );
     
     // First expand the card
     fireEvent.click(screen.getByText('Green Garden').closest('div')!);
@@ -97,5 +110,25 @@ describe('ProducerListItem Component', () => {
     
     // The label should change to indicate it's now favorited
     expect(heartButton).toHaveAttribute('aria-label', 'Remove from favorites');
+  });
+  
+  test('calls navigate when View Profile button is clicked', () => {
+    render(
+      <BrowserRouter>
+        <ProducerListItem producer={mockProducer} />
+      </BrowserRouter>
+    );
+    
+    // First expand the card
+    fireEvent.click(screen.getByText('Green Garden').closest('div')!);
+    
+    // Find the View Profile button
+    const viewProfileButton = screen.getByText('View Profile');
+    
+    // Click it to trigger navigation
+    fireEvent.click(viewProfileButton);
+    
+    // Verify that navigate was called with the expected path
+    expect(mockNavigate).toHaveBeenCalledWith(`/producer/${mockProducer.id}`);
   });
 });
