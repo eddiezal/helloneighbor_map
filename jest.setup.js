@@ -1,6 +1,8 @@
 // jest.setup.js
+import { jest } from '@jest/globals';
 import '@testing-library/jest-dom';
 
+// Now jest.fn() will be available
 // Mock browser APIs not available in jsdom
 class MockIntersectionObserver {
   constructor(callback) {
@@ -13,7 +15,7 @@ class MockIntersectionObserver {
 
 window.IntersectionObserver = MockIntersectionObserver;
 
-// Mock for window.matchMedia (often needed for responsive components)
+// Mock for window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({
@@ -26,6 +28,7 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// Other mocks...
 // Mock for Google Maps
 window.google = {
   maps: {
