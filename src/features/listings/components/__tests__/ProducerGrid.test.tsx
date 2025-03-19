@@ -1,16 +1,21 @@
 // src/features/listings/components/__tests__/ProducerGrid.test.tsx
+import { jest } from '@jest/globals';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ProducerGrid from '../ProducerGrid';
 import { Producer } from '../../../../core/types/Producer';
 
-// Mock the useNavigate hook
+// Define the mock navigate function before using it in the mock
 const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-}));
+
+// Mock react-router-dom - the order matters here
+jest.mock('react-router-dom', () => {
+  return {
+    ...jest.importActual('react-router-dom'),
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // Mock producers data for testing
 const mockProducers: Producer[] = [

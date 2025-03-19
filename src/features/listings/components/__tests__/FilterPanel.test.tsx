@@ -1,4 +1,7 @@
-// src/features/listings/components/__tests__/FilterPanel.test.tsx
+// ADD THIS AT THE TOP of src/features/listings/components/__tests__/FilterPanel.test.tsx
+import { jest } from '@jest/globals';
+
+// Rest of the imports remain the same
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import FilterPanel, { FilterState } from '../FilterPanel';

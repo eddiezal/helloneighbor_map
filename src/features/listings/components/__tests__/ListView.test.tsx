@@ -1,9 +1,13 @@
-// src/features/listings/components/__tests__/ListView.test.tsx
+// ADD THIS AT THE TOP of src/features/listings/components/__tests__/ListView.test.tsx
+import { jest } from '@jest/globals';
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ListView from '../ListView';
-import { AppProvider } from '../../../../core/context/AppContext';
+// CHANGE this line to an import statement
+import * as AppContextModule from '../../../../core/context/AppContext';
+// ADD this line to import mock data (or create the file if it doesn't exist)
 import { mockProducers } from '../../../../data/mockProducers';
 
 // Mock the ProducerListItem component to simplify testing
@@ -14,7 +18,6 @@ jest.mock('../ProducerListItem', () => {
       <div>{producer.type}</div>
     </div>
   );
-  // Remove the test that was here - it shouldn't be inside the mock!
 });
 
 // Mock the ProducerGrid component
@@ -41,11 +44,11 @@ jest.mock('../FilterPanel', () => {
 const mockSetSearchQuery = jest.fn();
 const mockSetSortBy = jest.fn();
 
+// CHANGE the way the mock is defined
 jest.mock('../../../../core/context/AppContext', () => {
-  const originalModule = jest.requireActual('../../../../core/context/AppContext');
-  
   return {
-    ...originalModule,
+    // Change requireActual to importActual
+    ...jest.importActual('../../../../core/context/AppContext'),
     useAppContext: () => ({
       filteredProducers: mockProducers,
       searchQuery: '',
@@ -57,12 +60,14 @@ jest.mock('../../../../core/context/AppContext', () => {
   };
 });
 
+// For the test that needs custom context values
+// CHANGE this to use jest.spyOn instead of require
 describe('ListView Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  // Add the test that was incorrectly placed in the mock here
+  // The test that was incorrectly placed in the mock
   test('renders responsive layout correctly', () => {
     // Mock window.matchMedia for testing responsiveness
     Object.defineProperty(window, 'matchMedia', {
@@ -102,14 +107,43 @@ describe('ListView Component', () => {
     render(<ListView />, { wrapper: BrowserRouter });
     
     // Filter panel should still be there, but with mobile styling
-    // In a real test, we would check specific mobile-only classes
     expect(screen.getAllByText('Filter Panel')).toHaveLength(2);
   });
 
-  // Rest of your tests stay the same...
-  test('handles search input correctly', () => {
-    // ...existing test code...
+  // For the test that uses a custom useAppContext implementation
+  test('shows correct producer count', () => {
+    // Create a custom array of producers for this test
+    const customProducers = Array(5).fill({
+      id: 1,
+      name: 'Test Producer',
+      type: 'gardener',
+      rating: 4.5,
+      reviews: 10
+    });
+    
+    // REPLACE this approach
+    // const originalUseAppContext = require('../../../../core/context/AppContext').useAppContext;
+    // require('../../../../core/context/AppContext').useAppContext = customUseAppContext;
+    
+    // WITH this approach using spyOn
+    const useAppContextSpy = jest.spyOn(AppContextModule, 'useAppContext');
+    useAppContextSpy.mockImplementation(() => ({
+      filteredProducers: customProducers,
+      searchQuery: '',
+      setSearchQuery: mockSetSearchQuery,
+      sortBy: 'distance',
+      setSortBy: mockSetSortBy
+    }));
+    
+    render(<ListView />, { wrapper: BrowserRouter });
+    
+    // Check for the correct count in the header and results display
+    expect(screen.getByText(/5 Neighbors Available/i)).toBeInTheDocument();
+    expect(screen.getByText(/5 result/i)).toBeInTheDocument();
+    
+    // Clean up the spy after the test
+    useAppContextSpy.mockRestore();
   });
-  
-  // ...other tests...
+
+  // Rest of your tests stay the same...
 });

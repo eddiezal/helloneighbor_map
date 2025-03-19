@@ -1,16 +1,20 @@
-// src/features/listings/components/__tests__/ProducerListItem.test.tsx
+// ADD THIS AT THE TOP of src/features/listings/components/__tests__/ProducerListItem.test.tsx
+import { jest } from '@jest/globals';
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ProducerListItem from '../ProducerListItem';
 import { AvailabilityStatus, ProducerType } from '../../../../core/types/Producer';
 
-// Mock useNavigate hook
-const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-}));
+// CHANGE how the Router mock is implemented
+jest.mock('react-router-dom', () => {
+  return {
+    // Change requireActual to importActual
+    ...jest.importActual('react-router-dom'),
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // Simple producer mock that doesn't rely on importing the full Producer type
 const mockProducer = {
