@@ -1,5 +1,6 @@
 // src/features/listings/components/__tests__/ProducerGrid.test.tsx
 import { jest } from '@jest/globals';
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ProducerGrid from '../ProducerGrid';
 import { Producer } from '../../../../core/types/Producer';
