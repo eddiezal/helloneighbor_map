@@ -1,4 +1,5 @@
 // jest.setup.js
+import { jest } from '@jest/globals';
 import '@testing-library/jest-dom';
 
 // Mock browser APIs not available in jsdom
