@@ -1,19 +1,23 @@
 // src/features/listings/components/__tests__/ProducerGrid.test.tsx
 import { jest } from '@jest/globals';
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import ProducerGrid from '../ProducerGrid';
 import { Producer } from '../../../../core/types/Producer';
 
-// Define the mock navigate function before mocking
+// Define the mock navigate function
 const mockNavigate = jest.fn();
 
-// Mock the entire react-router-dom module
+// Mock only useNavigate, not the whole module
 jest.mock('react-router-dom', () => ({
-  // Only mock the functions we need and be explicit about their implementations
-  BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  useNavigate: () => mockNavigate,
-  Link: ({ children, to }: { children: React.ReactNode, to: string }) => <a href={to}>{children}</a>
+  __esModule: true,
+  // Explicitly list all components we need instead of spreading
+  BrowserRouter: jest.requireActual('react-router-dom').BrowserRouter,
+  Routes: jest.requireActual('react-router-dom').Routes,
+  Route: jest.requireActual('react-router-dom').Route,
+  Link: jest.requireActual('react-router-dom').Link,
+  // Add the mocked hooks
+  useNavigate: () => mockNavigate
 }));
 
 // Mock producers data for testing
@@ -63,7 +67,11 @@ describe('ProducerGrid Component', () => {
   });
 
   test('renders a grid of producer cards', () => {
-    render(<ProducerGrid producers={mockProducers} />);
+    render(
+      <BrowserRouter>
+        <ProducerGrid producers={mockProducers} />
+      </BrowserRouter>
+    );
     
     // Check that both producer names are rendered
     expect(screen.getByText('Green Garden')).toBeInTheDocument();
@@ -71,7 +79,11 @@ describe('ProducerGrid Component', () => {
   });
 
   test('navigates to producer detail when View Profile is clicked', () => {
-    render(<ProducerGrid producers={mockProducers} />);
+    render(
+      <BrowserRouter>
+        <ProducerGrid producers={mockProducers} />
+      </BrowserRouter>
+    );
     
     // Find the first View Profile button (there will be one for each producer)
     const viewProfileButtons = screen.getAllByText('View Profile');
@@ -84,7 +96,11 @@ describe('ProducerGrid Component', () => {
   });
 
   test('displays correct availability badge for each producer', () => {
-    render(<ProducerGrid producers={mockProducers} />);
+    render(
+      <BrowserRouter>
+        <ProducerGrid producers={mockProducers} />
+      </BrowserRouter>
+    );
     
     // First producer is available now
     expect(screen.getByText('Available now')).toBeInTheDocument();
@@ -94,7 +110,11 @@ describe('ProducerGrid Component', () => {
   });
 
   test('handles empty producers array', () => {
-    render(<ProducerGrid producers={[]} />);
+    render(
+      <BrowserRouter>
+        <ProducerGrid producers={[]} />
+      </BrowserRouter>
+    );
     
     // Should render an empty grid without errors
     const grid = screen.getByRole('grid');
