@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Producer } from '../../../core/types/Producer';
-import { Star, Heart, Clock, MapPin } from 'lucide-react';
+import { Star, Heart, Clock } from 'lucide-react';
 
 const CATEGORY_COLORS = {
   baker: '#FF5252',
