@@ -1,4 +1,4 @@
-// ADD THIS AT THE TOP of src/features/listings/components/__tests__/ProducerListItem.test.tsx
+// src/features/listings/components/__tests__/ProducerListItem.test.tsx
 import { jest } from '@jest/globals';
 
 import React from 'react';
@@ -7,10 +7,12 @@ import { BrowserRouter } from 'react-router-dom';
 import ProducerListItem from '../ProducerListItem';
 import { AvailabilityStatus, ProducerType } from '../../../../core/types/Producer';
 
-// CHANGE how the Router mock is implemented
+// Define the mock navigate function before using it in the mock
+const mockNavigate = jest.fn();
+
+// Now use mockNavigate in the mock
 jest.mock('react-router-dom', () => {
   return {
-    // Change requireActual to importActual
     ...jest.importActual('react-router-dom'),
     useNavigate: () => mockNavigate,
   };
