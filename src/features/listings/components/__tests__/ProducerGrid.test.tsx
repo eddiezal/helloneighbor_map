@@ -9,14 +9,12 @@ import { Producer } from '../../../../core/types/Producer';
 // Define the mock navigate function
 const mockNavigate = jest.fn();
 
-// Mock react-router-dom using ESM import
-jest.mock('react-router-dom', () => {
-  const originalModule = jest.importActual('react-router-dom');
-  return {
-    ...originalModule,
-    useNavigate: () => mockNavigate,
-  };
-});
+// Mock react-router-dom
+// This is the updated section that avoids using importActual
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate,
+}));
 
 // Mock producers data for testing
 const mockProducers: Producer[] = [
