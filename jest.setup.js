@@ -1,47 +1,48 @@
 // jest.setup.js
-import { jest } from '@jest/globals';
 import '@testing-library/jest-dom';
 
-// Now jest.fn() will be available
 // Mock browser APIs not available in jsdom
-class MockIntersectionObserver {
-  constructor(callback) {
-    this.callback = callback;
+global.IntersectionObserver = class IntersectionObserver {
+  constructor() {
+    this.root = null;
+    this.rootMargin = '';
+    this.thresholds = [];
+    this.disconnect = jest.fn();
+    this.observe = jest.fn();
+    this.takeRecords = jest.fn();
+    this.unobserve = jest.fn();
   }
-  observe() { return null; }
-  unobserve() { return null; }
-  disconnect() { return null; }
-}
+};
 
-window.IntersectionObserver = MockIntersectionObserver;
-
-// Mock for window.matchMedia
+// Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
 });
 
-// Other mocks...
-// Mock for Google Maps
+// Mock Google Maps API
 window.google = {
   maps: {
-    Map: class MockMap {
+    Map: class Map {
       constructor() {}
       setCenter() {}
       setZoom() {}
     },
-    Marker: class MockMarker {
+    Marker: class Marker {
       constructor() {}
       setMap() {}
+      addListener() { return { remove: jest.fn() }; }
     },
-    LatLng: class MockLatLng {
+    LatLng: class LatLng {
       constructor(lat, lng) {
         this.lat = lat;
         this.lng = lng;
@@ -49,12 +50,33 @@ window.google = {
       lat() { return this.lat; }
       lng() { return this.lng; }
     },
+    InfoWindow: class InfoWindow {
+      constructor() {}
+      setContent() {}
+      open() {}
+      close() {}
+    },
     event: {
-      addListener: jest.fn(),
+      addListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
       removeListener: jest.fn()
     },
     SymbolPath: {
       CIRCLE: 0
     }
+  }
+};
+
+// Mock for HelloNeighbor global object
+window.HelloNeighbor = {
+  selectProducer: jest.fn()
+};
+
+// Mock for ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  constructor(callback) {
+    this.callback = callback;
+    this.observe = jest.fn();
+    this.unobserve = jest.fn();
+    this.disconnect = jest.fn();
   }
 };

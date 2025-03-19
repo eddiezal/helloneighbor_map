@@ -1,19 +1,19 @@
 // src/features/listings/components/__tests__/ProducerListItem.test.tsx
 import { jest } from '@jest/globals';
-
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ProducerListItem from '../ProducerListItem';
 import { AvailabilityStatus, ProducerType } from '../../../../core/types/Producer';
 
-// Define the mock navigate function before using it in the mock
+// Define the mock navigate function
 const mockNavigate = jest.fn();
 
-// Now use mockNavigate in the mock
+// Mock react-router-dom
 jest.mock('react-router-dom', () => {
+  const actual = jest.requireActual('react-router-dom');
   return {
-    ...jest.importActual('react-router-dom'),
+    ...actual,
     useNavigate: () => mockNavigate,
   };
 });
@@ -44,6 +44,10 @@ const renderWithRouter = (ui: React.ReactElement) => {
 };
 
 describe('ProducerListItem Component', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('renders basic producer information correctly', () => {
     renderWithRouter(<ProducerListItem producer={mockProducer} />);
     
@@ -64,5 +68,34 @@ describe('ProducerListItem Component', () => {
   test('displays availability badge with correct status', () => {
     renderWithRouter(<ProducerListItem producer={mockProducer} />);
     expect(screen.getByText('Available now')).toBeInTheDocument();
+  });
+  
+  test('toggles expanded state when clicked', () => {
+    renderWithRouter(<ProducerListItem producer={mockProducer} />);
+    
+    // Initially not expanded - action buttons not visible
+    expect(screen.queryByText('View Profile')).not.toBeInTheDocument();
+    
+    // Click to expand
+    fireEvent.click(screen.getByText('Green Garden').closest('div')!);
+    
+    // Now the action buttons should be visible
+    expect(screen.getByText('View Profile')).toBeInTheDocument();
+  });
+  
+  test('toggles favorite state when heart button is clicked', () => {
+    renderWithRouter(<ProducerListItem producer={mockProducer} />);
+    
+    // First expand the card
+    fireEvent.click(screen.getByText('Green Garden').closest('div')!);
+    
+    // Find the heart button
+    const heartButton = screen.getByLabelText('Add to favorites');
+    
+    // Click it to toggle favorite
+    fireEvent.click(heartButton);
+    
+    // The label should change to indicate it's now favorited
+    expect(heartButton).toHaveAttribute('aria-label', 'Remove from favorites');
   });
 });
