@@ -10,5 +10,5 @@ export const categories: Category[] = [
   { id: 'specialty', name: 'Specialty', icon: '✨' }
 ];
 
-// Add this line to export mockCategories for backwards compatibility
-export const mockCategories = categories;
+// Also export as Categories for backward compatibility (if needed)
+export const Categories = categories;

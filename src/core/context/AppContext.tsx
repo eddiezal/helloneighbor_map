@@ -3,8 +3,18 @@ import React, { createContext, useContext, useState, useEffect, useMemo, ReactNo
 import { Producer } from '../types/Producer';
 import { Category } from '../types/Category';
 import { ViewMode, SortOption, FilterAvailability } from '../types/ui.types';
-import { mockProducers } from '../../data/mockProducers';
-import { mockCategories } from '../../data/mockCategories';
+import { producers } from '../../data/mockProducers';
+import { categories } from '../../data/mockCategories'; // Changed from Categories to categories
+
+// Fallback categories in case the import fails
+const fallbackCategories: Category[] = [
+  { id: 'all', name: 'All', icon: '🏠' },
+  { id: 'gardener', name: 'Produce', icon: '🥬' },
+  { id: 'baker', name: 'Baked', icon: '🍞' },
+  { id: 'eggs', name: 'Eggs', icon: '🥚' },
+  { id: 'homecook', name: 'Prepared', icon: '🍲' },
+  { id: 'specialty', name: 'Specialty', icon: '✨' }
+];
 
 // Define the context type
 export interface AppContextType {
@@ -39,6 +49,13 @@ export interface AppContextType {
   // Feature flags
   isMapEnabled: boolean;
   isAuthEnabled: boolean;
+  
+  // Auth functions (mock for now)
+  isAuthenticated: boolean;
+  user: {name?: string, email?: string} | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  isLoading: boolean;
 }
 
 // Create context with a default undefined value
@@ -50,9 +67,9 @@ interface AppProviderProps {
 }
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  // State for data
-  const [producers, setProducers] = useState<Producer[]>(mockProducers);
-  const [categories] = useState<Category[]>(mockCategories);
+  // State for data - use fallback if categories import fails
+  const [producersData, setProducersData] = useState<Producer[]>(producers || []);
+  const [categoriesData] = useState<Category[]>(categories || fallbackCategories);
   
   // State for view
   const [activeView, setActiveView] = useState<ViewMode>('map');
@@ -72,28 +89,49 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [isMapEnabled] = useState(true);
   const [isAuthEnabled] = useState(false);
   
-  // Fetch producers (mock for now, will be replaced with API call)
-  useEffect(() => {
-    // Simulate API call
-    const fetchProducers = async () => {
-      try {
-        // In a real app, this would be an API call
-        // const response = await api.getProducers();
-        // setProducers(response.data);
-        
-        // Using mock data for now
-        setProducers(mockProducers);
-      } catch (error) {
-        console.error('Error fetching producers:', error);
-      }
-    };
+  // Auth mock states
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<{name?: string, email?: string} | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Login mock
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
     
-    fetchProducers();
-  }, []);
+    // Simulate API call
+    return new Promise<void>((resolve, reject) => {
+      setTimeout(() => {
+        if (email === 'user@example.com' && password === 'password') {
+          setIsAuthenticated(true);
+          setUser({ name: 'Demo User', email });
+          setIsLoading(false);
+          resolve();
+        } else {
+          setIsLoading(false);
+          reject(new Error('Invalid credentials'));
+        }
+      }, 500);
+    });
+  };
+  
+  // Logout mock
+  const logout = async () => {
+    setIsLoading(true);
+    
+    // Simulate API call
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setIsAuthenticated(false);
+        setUser(null);
+        setIsLoading(false);
+        resolve();
+      }, 300);
+    });
+  };
   
   // Filtered producers based on current filters
   const filteredProducers = useMemo(() => {
-    return producers.filter(producer => {
+    return producersData.filter(producer => {
       // Apply category filter
       if (selectedCategory !== 'all' && producer.type !== selectedCategory) {
         return false;
@@ -142,18 +180,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           return a.distance - b.distance;
       }
     });
-  }, [producers, selectedCategory, filterAvailability, searchQuery, sortBy]);
+  }, [producersData, selectedCategory, filterAvailability, searchQuery, sortBy]);
   
   // Featured producers
   const featuredProducers = useMemo(() => {
-    return producers.filter(p => p.featured && p.availability === 'now').slice(0, 5);
-  }, [producers]);
+    return producersData.filter(p => p.featured && p.availability === 'now').slice(0, 5);
+  }, [producersData]);
   
   // Context value
   const value: AppContextType = {
     // Data
-    producers,
-    categories,
+    producers: producersData,
+    categories: categoriesData,
     
     // View state
     activeView,
@@ -181,7 +219,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     
     // Feature flags
     isMapEnabled,
-    isAuthEnabled
+    isAuthEnabled,
+    
+    // Auth
+    isAuthenticated,
+    user,
+    login,
+    logout,
+    isLoading
   };
   
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
