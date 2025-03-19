@@ -1,6 +1,6 @@
 // jest.setup.js
-import { jest } from '@jest/globals';
 import '@testing-library/jest-dom';
+import { jest } from '@jest/globals';
 
 // Mock browser APIs not available in jsdom
 global.IntersectionObserver = class IntersectionObserver {

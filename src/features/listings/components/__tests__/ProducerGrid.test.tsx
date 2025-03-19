@@ -1,7 +1,7 @@
 // src/features/listings/components/__tests__/ProducerGrid.test.tsx
 import { jest } from '@jest/globals';
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ProducerGrid from '../ProducerGrid';
 import { Producer } from '../../../../core/types/Producer';
@@ -9,11 +9,11 @@ import { Producer } from '../../../../core/types/Producer';
 // Define the mock navigate function
 const mockNavigate = jest.fn();
 
-// Mock react-router-dom
+// Mock react-router-dom using ESM import
 jest.mock('react-router-dom', () => {
-  const actual = jest.requireActual('react-router-dom');
+  const originalModule = jest.importActual('react-router-dom');
   return {
-    ...actual,
+    ...originalModule,
     useNavigate: () => mockNavigate,
   };
 });
@@ -101,7 +101,7 @@ describe('ProducerGrid Component', () => {
     renderWithRouter(<ProducerGrid producers={[]} />);
     
     // Should render an empty grid without errors
-    const grid = screen.getByRole('grid', { hidden: true });
+    const grid = screen.getByRole('grid');
     expect(grid).toBeInTheDocument();
     expect(grid.children.length).toBe(0);
   });

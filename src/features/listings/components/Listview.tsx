@@ -1,21 +1,21 @@
 // src/features/listings/components/ListView.tsx
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../../../core/context/AppContext';
-import { Filter, Search, Grid, List } from 'lucide-react';
+import { Filter, Search, Grid, List as ListIcon } from 'lucide-react';
 import ProducerListItem from './ProducerListItem';
 import ProducerGrid from './ProducerGrid';
-import FilterPanel from './FilterPanel';
-import { FilterState } from './FilterPanel';
+import FilterPanel, { FilterState } from './FilterPanel';
+
+// Import from AppContext
+import { useAppContext } from '../../../core/context/AppContext';
+
+// Define sort options
+export type SortOption = 'distance' | 'rating' | 'reviews' | 'name' | 'availability';
 
 const ListView: React.FC = () => {
-  const { 
-    filteredProducers, 
-    searchQuery, 
-    setSearchQuery,
-    sortBy,
-    setSortBy
-  } = useAppContext();
+  // Get data from context
+  const { filteredProducers, searchQuery, setSearchQuery, sortBy, setSortBy } = useAppContext();
   
+  // Local state
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [isLoading, setIsLoading] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -42,18 +42,18 @@ const ListView: React.FC = () => {
     setActiveFiltersCount(count);
   }, [activeFilters]);
   
-  // Toggle view mode between list and grid
+  // Toggle view mode
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'list' ? 'grid' : 'list');
   };
   
-  // Toggle sort dropdown visibility
+  // Toggle sort dropdown
   const toggleSortDropdown = () => {
     setShowSortDropdown(prev => !prev);
   };
   
   // Handle sort change
-  const handleSortChange = (option: any) => {
+  const handleSortChange = (option: SortOption) => {
     setSortBy(option);
     setShowSortDropdown(false);
   };
@@ -72,8 +72,7 @@ const ListView: React.FC = () => {
   // Handle filter application
   const handleApplyFilters = (filters: FilterState) => {
     setActiveFilters(filters);
-    // In a real app, you would apply these filters to your data
-    console.log('Applied filters:', filters);
+    // You would apply these filters to your data
   };
   
   // Create skeleton loading UI
@@ -111,7 +110,7 @@ const ListView: React.FC = () => {
               >
                 {viewMode === 'list' ? 
                   <Grid className="w-5 h-5" /> : 
-                  <List className="w-5 h-5" />
+                  <ListIcon className="w-5 h-5" />
                 }
               </button>
               

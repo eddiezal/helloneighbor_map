@@ -1,22 +1,23 @@
-// jest.config.mjs
+// jest.config.js
 export default {
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['./jest.setup.js'],
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { configFile: './babel.config.cjs' }]
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      useESM: true,
+    }]
   },
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
   moduleNameMapper: {
-    '\\.(css|less|scss)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/__mocks__/fileMock.js',
-    '^@/(.*)$': '<rootDir>/src/$1'
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
   },
-  transformIgnorePatterns: [
-    '/node_modules/(?!(.+mjs$|react-router|@babel/runtime))'
-  ],
-  testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.{ts,tsx}',
-    '<rootDir>/src/**/*.{spec,test}.{ts,tsx}'
-  ],
-  verbose: true
-}
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  testMatch: ['**/__tests__/**/*.test.(ts|tsx)', '**/__tests__/**/?(*.)(spec|test).[jt]s?(x)'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+      isolatedModules: true
+    }
+  }
+};

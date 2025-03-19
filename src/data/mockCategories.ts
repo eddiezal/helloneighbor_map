@@ -1,3 +1,4 @@
+// src/data/mockCategories.ts
 import { Category } from '../types/Category';
 
 export const categories: Category[] = [
@@ -8,3 +9,6 @@ export const categories: Category[] = [
   { id: 'homecook', name: 'Prepared', icon: '🍲' },
   { id: 'specialty', name: 'Specialty', icon: '✨' }
 ];
+
+// Add this line to export mockCategories for backwards compatibility
+export const mockCategories = categories;

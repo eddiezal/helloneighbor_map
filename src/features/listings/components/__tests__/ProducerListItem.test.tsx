@@ -4,25 +4,26 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ProducerListItem from '../ProducerListItem';
-import { AvailabilityStatus, ProducerType } from '../../../../core/types/Producer';
+import { Producer } from '../../../../core/types/Producer';
 
 // Define the mock navigate function
 const mockNavigate = jest.fn();
 
 // Mock react-router-dom
 jest.mock('react-router-dom', () => {
-  const actual = jest.requireActual('react-router-dom');
+  // Use ESM import syntax
+  const originalModule = jest.importActual('react-router-dom');
   return {
-    ...actual,
+    ...originalModule,
     useNavigate: () => mockNavigate,
   };
 });
 
-// Simple producer mock that doesn't rely on importing the full Producer type
-const mockProducer = {
+// Simple producer mock
+const mockProducer: Producer = {
   id: 1,
   name: 'Green Garden',
-  type: 'gardener' as ProducerType,
+  type: 'gardener',
   icon: '🥬',
   images: ['image1.jpg', 'image2.jpg', 'image3.jpg'],
   description: 'Fresh organic vegetables from my backyard garden',
@@ -32,7 +33,7 @@ const mockProducer = {
   walkTime: 8,
   lat: 32.7157,
   lng: -117.1611,
-  availability: 'now' as AvailabilityStatus,
+  availability: 'now',
   featured: true,
   items: ['Tomatoes', 'Lettuce', 'Cucumbers', 'Zucchini'],
   productImages: ['product1.jpg', 'product2.jpg']

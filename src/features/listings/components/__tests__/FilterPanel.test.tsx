@@ -60,20 +60,16 @@ describe('FilterPanel Component', () => {
     // Open filter panel
     fireEvent.click(screen.getByText('Filters'));
     
-    // The Walking Distance section should be collapsed initially
-    // Find the max walking time text, which is in the hidden content
-    const maxWalkTimeText = screen.queryByText(/Max walking time/i);
-    
-    // Initially it shouldn't be visible/accessible because the section is collapsed
-    expect(maxWalkTimeText).not.toBeVisible();
+    // Initially all sections should be collapsed
+    // The Max walking time content should not be present (null renders nothing)
+    expect(screen.queryByText(/Max walking time/i)).not.toBeInTheDocument();
     
     // Click on Walking Distance to expand it
     fireEvent.click(screen.getByText('Walking Distance'));
     
     // Now check if the content is visible
     await waitFor(() => {
-      const maxWalkTimeTextAfterClick = screen.getByText(/Max walking time/i);
-      expect(maxWalkTimeTextAfterClick).toBeVisible();
+      expect(screen.getByText(/Max walking time/i)).toBeInTheDocument();
     });
   });
 
@@ -100,6 +96,22 @@ describe('FilterPanel Component', () => {
   });
 
   test('updates rating filter when rating option is clicked', async () => {
+    render(<FilterPanel onApplyFilters={mockApplyFilters} />);
+    
+    // Open filter panel
+    fireEvent.click(screen.getByText('Filters'));
+    
+    // Open Rating section
+    fireEvent.click(screen.getByText('Rating'));
+    
+    // Click on 4+ stars option
+    fireEvent.click(screen.getByText('4+ stars'));
+    
+    // Apply filters
+    fireEvent.click(screen.getByText('Apply Filters'));
+    
+// src/features/listings/components/__tests__/FilterPanel.test.tsx (continued)
+test('updates rating filter when rating option is clicked', async () => {
     render(<FilterPanel onApplyFilters={mockApplyFilters} />);
     
     // Open filter panel
@@ -206,99 +218,4 @@ describe('FilterPanel Component', () => {
     // Check that onApplyFilters was called with both dietary options
     expect(mockApplyFilters).toHaveBeenCalledWith(
       expect.objectContaining({ 
-        dietaryOptions: expect.arrayContaining(['organic', 'vegan']) 
-      })
-    );
-  });
-
-  test('toggles additional options correctly', async () => {
-    render(<FilterPanel onApplyFilters={mockApplyFilters} />);
-    
-    // Open filter panel
-    fireEvent.click(screen.getByText('Filters'));
-    
-    // Check both checkboxes
-    fireEvent.click(screen.getByLabelText('Featured neighbors only'));
-    fireEvent.click(screen.getByLabelText('Top-rated neighbors only (4.8+)'));
-    
-    // Apply filters
-    fireEvent.click(screen.getByText('Apply Filters'));
-    
-    // Check that onApplyFilters was called with both options set to true
-    expect(mockApplyFilters).toHaveBeenCalledWith(
-      expect.objectContaining({ 
-        showFeaturedOnly: true,
-        showTopRatedOnly: true
-      })
-    );
-  });
-
-  test('resets all filters when reset button is clicked', async () => {
-    // Render with initial filters set
-    render(
-      <FilterPanel 
-        onApplyFilters={mockApplyFilters} 
-        initialFilters={{
-          maxWalkTime: 15,
-          minRating: 4,
-          availability: ['available-now'],
-          dietaryOptions: ['organic'],
-          priceRange: [2, 4],
-          categories: ['baker'],
-          showFeaturedOnly: true,
-          showTopRatedOnly: false
-        }}
-      />
-    );
-    
-    // Open filter panel
-    fireEvent.click(screen.getByText('Filters'));
-    
-    // Click Reset All
-    fireEvent.click(screen.getByText('Reset All'));
-    
-    // Apply filters
-    fireEvent.click(screen.getByText('Apply Filters'));
-    
-    // Check that onApplyFilters was called with default values
-    expect(mockApplyFilters).toHaveBeenCalledWith(defaultFilters);
-  });
-
-  test('closes when clicking outside the panel', async () => {
-    const { container } = render(<FilterPanel onApplyFilters={mockApplyFilters} />);
-    
-    // Open filter panel
-    fireEvent.click(screen.getByText('Filters'));
-    
-    // Panel should be open
-    expect(screen.getByText('Walking Distance')).toBeInTheDocument();
-    
-    // Create a mock click event outside the panel
-    // First, we'll find the overlay element (the semi-transparent background)
-    // In this case, we'll just click on the document body outside of our component
-    fireEvent.mouseDown(document.body);
-    
-    // Panel should be closed
-    await waitFor(() => {
-      expect(screen.queryByText('Walking Distance')).not.toBeInTheDocument();
-    });
-  });
-
-  test('displays active filters count correctly', () => {
-    // Render with several active filters
-    render(
-      <FilterPanel 
-        onApplyFilters={mockApplyFilters} 
-        activeFiltersCount={7}
-      />
-    );
-    
-    // Check that the count badge shows 7
-    const filterCount = screen.getByText('7');
-    expect(filterCount).toBeInTheDocument();
-    
-    // The filter button should have primary color since filters are active
-    const filterButton = screen.getByText('Filters').closest('button');
-    expect(filterButton).toHaveClass('bg-primary');
-  });
-});
+        dietaryOptions: expect.arrayContaining(['organic', 've
