@@ -1,7 +1,7 @@
 // src/features/listings/components/ProducerListItem.tsx
 import React, { useState } from 'react';
 import { Producer } from '../../../core/types/Producer';
-import { Star, Clock, Heart, MessageCircle, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
+import { Star, Heart, MessageCircle, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Category color mapping

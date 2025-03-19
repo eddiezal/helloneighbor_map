@@ -1,6 +1,5 @@
 // src/features/listings/components/__tests__/ProducerListItem.test.tsx
 import { jest } from '@jest/globals';
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ProducerListItem from '../ProducerListItem';
@@ -11,11 +10,11 @@ const mockNavigate = jest.fn();
 
 // Mock react-router-dom
 jest.mock('react-router-dom', () => {
-  // Use ESM import syntax
-  const originalModule = jest.importActual('react-router-dom');
+  // Create a manual mock that includes what we need
   return {
-    ...originalModule,
+    BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     useNavigate: () => mockNavigate,
+    Link: ({ children, to }: { children: React.ReactNode, to: string }) => <a href={to}>{children}</a>
   };
 });
 

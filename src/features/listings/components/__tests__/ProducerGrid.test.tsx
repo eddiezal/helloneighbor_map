@@ -1,19 +1,18 @@
 // src/features/listings/components/__tests__/ProducerGrid.test.tsx
 import { jest } from '@jest/globals';
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 import ProducerGrid from '../ProducerGrid';
 import { Producer } from '../../../../core/types/Producer';
 
-// Define the mock navigate function
+// Define the mock navigate function before mocking
 const mockNavigate = jest.fn();
 
-// Mock react-router-dom
-// This is the updated section that avoids using importActual
+// Mock the entire react-router-dom module
 jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
+  // Only mock the functions we need and be explicit about their implementations
+  BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   useNavigate: () => mockNavigate,
+  Link: ({ children, to }: { children: React.ReactNode, to: string }) => <a href={to}>{children}</a>
 }));
 
 // Mock producers data for testing
@@ -56,18 +55,14 @@ const mockProducers: Producer[] = [
   }
 ];
 
-// Helper function to wrap component with Router
-const renderWithRouter = (component: React.ReactElement) => {
-  return render(component, { wrapper: BrowserRouter });
-};
-
 describe('ProducerGrid Component', () => {
   beforeEach(() => {
+    // Clear all mocks before each test
     jest.clearAllMocks();
   });
 
   test('renders a grid of producer cards', () => {
-    renderWithRouter(<ProducerGrid producers={mockProducers} />);
+    render(<ProducerGrid producers={mockProducers} />);
     
     // Check that both producer names are rendered
     expect(screen.getByText('Green Garden')).toBeInTheDocument();
@@ -75,18 +70,20 @@ describe('ProducerGrid Component', () => {
   });
 
   test('navigates to producer detail when View Profile is clicked', () => {
-    renderWithRouter(<ProducerGrid producers={mockProducers} />);
+    render(<ProducerGrid producers={mockProducers} />);
     
-    // Find and click the View Profile button for the first producer
+    // Find the first View Profile button (there will be one for each producer)
     const viewProfileButtons = screen.getAllByText('View Profile');
+    
+    // Click the button to trigger navigation
     fireEvent.click(viewProfileButtons[0]);
     
-    // Check that navigation was called with the correct route
+    // Verify that mockNavigate was called with the expected path
     expect(mockNavigate).toHaveBeenCalledWith('/producer/1');
   });
 
   test('displays correct availability badge for each producer', () => {
-    renderWithRouter(<ProducerGrid producers={mockProducers} />);
+    render(<ProducerGrid producers={mockProducers} />);
     
     // First producer is available now
     expect(screen.getByText('Available now')).toBeInTheDocument();
@@ -96,7 +93,7 @@ describe('ProducerGrid Component', () => {
   });
 
   test('handles empty producers array', () => {
-    renderWithRouter(<ProducerGrid producers={[]} />);
+    render(<ProducerGrid producers={[]} />);
     
     // Should render an empty grid without errors
     const grid = screen.getByRole('grid');

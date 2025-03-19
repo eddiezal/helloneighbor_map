@@ -1,12 +1,14 @@
 // src/features/listings/components/__tests__/ListView.test.tsx
 import { jest } from '@jest/globals';
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import ListView from '../ListView';
-import { Producer } from '../../../../core/types/Producer';
 
-// Create a mock context for testing
+// The error suggests ListView.tsx doesn't exist at the expected path
+// Let's make sure we have the correct path to the component
+// Looking at your project structure, I'll fix the import path:
+import ListView from '../Listview'; // Note the capitalization - Listview.tsx not ListView.tsx
+
+// Mock the context and Filter components
 jest.mock('../../../../core/context/AppContext', () => ({
   useAppContext: () => ({
     filteredProducers: [

@@ -1,17 +1,21 @@
-// src/features/listings/components/ListView.tsx
-import React, { useState, useEffect } from 'react';
+// src/features/listings/components/Listview.tsx
+import React, { useState } from 'react';
 import { Filter, Search, Grid, List } from 'lucide-react';
 import ProducerListItem from './ProducerListItem';
 import ProducerGrid from './ProducerGrid';
 import FilterPanel, { FilterState } from './FilterPanel';
+import { Producer } from '../../../core/types/Producer';
+
+// Define the type for sort options
+type SortOption = 'distance' | 'rating';
 
 // Mock the context for now - you can replace this with your actual context import
 const useAppContext = () => ({
-  filteredProducers: [],
+  filteredProducers: [] as Producer[],
   searchQuery: '',
-  setSearchQuery: (query: string) => {},
-  sortBy: 'distance' as const,
-  setSortBy: (option: any) => {}
+  setSearchQuery: (_: string) => {},
+  sortBy: 'distance' as SortOption, // Properly typed as SortOption
+  setSortBy: (_: SortOption) => {}
 });
 
 const ListView: React.FC = () => {
@@ -36,7 +40,7 @@ const ListView: React.FC = () => {
   };
   
   // Handle sort change
-  const handleSortChange = (option: any) => {
+  const handleSortChange = (option: SortOption) => {
     setSortBy(option);
     setShowSortDropdown(false);
   };
@@ -53,6 +57,16 @@ const ListView: React.FC = () => {
   // Handle filter application
   const handleApplyFilters = (filters: FilterState) => {
     setActiveFilters(filters);
+    // Count active filters for display purposes
+    let count = 0;
+    if (filters.maxWalkTime !== 30) count++;
+    if (filters.minRating > 0) count++;
+    if (filters.availability.length > 0) count++;
+    if (filters.dietaryOptions.length > 0) count++;
+    if (filters.categories.length > 0) count++;
+    if (filters.showFeaturedOnly) count++;
+    if (filters.showTopRatedOnly) count++;
+    setActiveFiltersCount(count);
   };
   
   return (
@@ -151,7 +165,7 @@ const ListView: React.FC = () => {
               ) : (
                 viewMode === 'list' ? (
                   <div className="space-y-4">
-                    {filteredProducers.map(producer => (
+                    {filteredProducers.map((producer) => (
                       <ProducerListItem key={producer.id} producer={producer} />
                     ))}
                   </div>

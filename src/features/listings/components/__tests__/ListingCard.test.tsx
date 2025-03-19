@@ -1,4 +1,4 @@
-import React from 'react';
+// src/features/listings/components/__tests__/ListingCard.test.tsx
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ListingCard from '../ListingCard';
