@@ -10,6 +10,7 @@ const HomePage: React.FC = () => {
   
   return (
     <div className="h-full">
+        <TailwindTest />
       {activeView === 'map' ? (
         <div className="h-[calc(100vh-208px)] md:h-[calc(100vh-200px)]">
           <IntegratedMapView />
