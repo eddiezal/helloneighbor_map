@@ -39,3 +39,12 @@ html, body, #root {
 .w-full {
   width: 100%;
 }
+
+/* Force-test class - should work regardless of Tailwind */
+.test-primary-bg {
+  background-color: green !important;
+  color: white !important;
+  padding: 1rem !important;
+  margin: 1rem !important;
+  border-radius: 0.5rem !important;
+}

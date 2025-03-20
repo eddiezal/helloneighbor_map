@@ -1,7 +1,7 @@
-// src/components/Map/MapView.tsx
+// src/components/Map/EnhancedMapView.tsx
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Producer } from '../../types/Producer';
-import { X, Star, Clock } from 'lucide-react';
+import { X, Star, Clock, Heart, MapPin, Shield, Users } from 'lucide-react';
 
 // Define consistent colors to use in both markers and legend
 const CATEGORY_COLORS = {
@@ -18,6 +18,7 @@ declare global {
   interface Window {
     HelloNeighbor?: {
       selectProducer: (id: number) => void;
+      toggleFavorite?: (id: number) => void;
     };
     google: any;
     [key: string]: any; // For dynamic callback names
@@ -28,19 +29,6 @@ interface MapViewProps {
   producers: Producer[];
   selectedCategory: string;
   filterAvailability: string;
-}
-
-// Create a global namespace for our app to prevent conflicts
-if (typeof window !== 'undefined') {
-  // Safely initialize the HelloNeighbor object
-  if (!window.HelloNeighbor) {
-    window.HelloNeighbor = {
-      selectProducer: function(producerId: number) {
-        console.log('Producer selection function initialized with ID:', producerId);
-        // This is just a placeholder that will be replaced in the component's useEffect
-      }
-    };
-  }
 }
 
 // Track if Google Maps API is already being loaded to avoid duplicate loading
@@ -95,13 +83,14 @@ const loadGoogleMapsApi = (apiKey: string): Promise<void> => {
   return googleMapsLoadedPromise;
 };
 
-const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAvailability }) => {
+const EnhancedMapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAvailability }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const infoWindowRef = useRef<any>(null);
+  const [favorited, setFavorited] = useState<number[]>([]);
   
   // Filter producers
   const filteredProducers = producers.filter(producer => {
@@ -135,71 +124,13 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
     ]
   };
 
-  // Create image grid for info window
-  const createImageGrid = useCallback((producer: Producer): string => {
-    // Default images in case we don't have enough product images
-    const defaultImg = `<div style="background-color: ${CATEGORY_COLORS[producer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default}; 
-                             display: flex; align-items: center; justify-content: center;">
-                          <span style="color: white; font-size: 20px;">${producer.icon}</span>
-                        </div>`;
-    
-    // Check for local images for specific producers
-    const localImages = producerLocalImages[producer.name as keyof typeof producerLocalImages];
-    
-    // Collect all available images with priority given to local images over producer-provided ones
-    const allImages = localImages 
-      ? localImages 
-      : [...(producer.images || []), ...(producer.productImages || [])].filter(img => img);
-    
-    // Get up to 3 images or use defaults
-    const images = [];
-    for (let i = 0; i < 3; i++) {
-      if (allImages && allImages[i]) {
-        images.push(`<div style="flex: 1; height: 100%; overflow: hidden;">
-                       <img src="${allImages[i]}" style="width: 100%; height: 100%; object-fit: cover;" alt="${producer.name} product image">
-                     </div>`);
-      } else {
-        images.push(`<div style="flex: 1; height: 100%; overflow: hidden;">${defaultImg}</div>`);
-      }
-    }
-    
-    return `<div style="display: flex; height: 100px; gap: 2px;">${images.join('')}</div>`;
-  }, []);
-
-  // Create badge for social proof
-  const createSocialProofBadge = useCallback((producer: Producer): string => {
-    let badge = '';
-    
-    if (producer.rating >= 4.9) {
-      badge = `<span style="background-color: #4CAF50; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; margin-right: 4px;">Top Rated</span>`;
-    } else if (producer.featured) {
-      badge = `<span style="background-color: #FFD700; color: black; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; margin-right: 4px;">Featured</span>`;
-    } else if (producer.reviews > 40) {
-      badge = `<span style="background-color: #2196F3; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; margin-right: 4px;">Popular</span>`;
-    }
-    
-    return badge;
-  }, []);
-
-  // Generate random inventory for demonstration
-  const generateInventory = useCallback((items: string[]): string => {
-    return items.map(item => {
-      const quantity = Math.floor(Math.random() * 10) + 1; // Random 1-10
-      return `<div style="display: flex; justify-content: space-between; font-size: 11px; color: #555;">
-                <span>${item}</span>
-                <span>${quantity} available</span>
-              </div>`;
-    }).join('');
-  }, []);
-
-  // Create a "currently viewing" indicator for added context
-  const createViewingNow = useCallback((): string => {
-    // Generate random number of viewers (1-5)
-    const viewers = Math.floor(Math.random() * 5) + 1;
-    return `<div style="font-size: 11px; color: #666; margin-top: 6px; display: flex; align-items: center;">
-              <span style="width: 8px; height: 8px; background-color: #FF5722; border-radius: 50%; margin-right: 4px;"></span>
-              ${viewers} ${viewers === 1 ? 'person' : 'people'} viewing now
-            </div>`;
+  // Toggle favorite
+  const toggleFavorite = useCallback((producerId: number) => {
+    setFavorited(prev => 
+      prev.includes(producerId) 
+        ? prev.filter(id => id !== producerId) 
+        : [...prev, producerId]
+    );
   }, []);
 
   // Helper function to create star rating HTML
@@ -213,89 +144,162 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
         ${Array(fullStars).fill('<span style="color: #FFD700;">★</span>').join('')}
         ${halfStar ? '<span style="color: #FFD700;">★</span>' : ''}
         ${Array(emptyStars).fill('<span style="color: #D3D3D3;">★</span>').join('')}
-        <span style="margin-left: 4px; font-size: 12px; color: #555;">${rating}</span>
+        <span style="margin-left: 4px; font-size: 12px; color: #555;">${rating.toFixed(1)}</span>
       </div>
     `;
   }, []);
 
   // Helper function to get availability text and color
-  const getAvailabilityInfo = useCallback((availability: string): { text: string; color: string } => {
+  const getAvailabilityInfo = useCallback((availability: string): { text: string; color: string; bgColor: string } => {
     switch (availability) {
       case 'now':
-        return { text: 'Available now', color: '#4CAF50' };
+        return { text: 'Available now', color: '#4CAF50', bgColor: 'rgba(76, 175, 80, 0.1)' };
       case 'tomorrow':
-        return { text: 'Available tomorrow', color: '#FF9800' };
+        return { text: 'Available tomorrow', color: '#FF9800', bgColor: 'rgba(255, 152, 0, 0.1)' };
       case 'weekend':
-        return { text: 'Available this weekend', color: '#9C27B0' };
+        return { text: 'Available this weekend', color: '#9C27B0', bgColor: 'rgba(156, 39, 176, 0.1)' };
       default:
-        return { text: 'Check availability', color: '#757575' };
+        return { text: 'Check availability', color: '#757575', bgColor: 'rgba(117, 117, 117, 0.1)' };
     }
   }, []);
 
-  // Create full featured info window content
+  // Generate random inventory for demonstration
+  const generateInventory = useCallback((items: string[]): string => {
+    return items.slice(0, 3).map(item => {
+      const quantity = Math.floor(Math.random() * 10) + 1; // Random 1-10
+      return `<div style="display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-bottom: 4px;">
+                <span>${item}</span>
+                <span style="background-color: #f0f0f0; padding: 0 4px; border-radius: 4px; font-weight: 500;">${quantity}</span>
+              </div>`;
+    }).join('');
+  }, []);
+
+  // Create image grid for info window
+  const createImageGrid = useCallback((producer: Producer): string => {
+    // Default image if no product images are available
+    const color = CATEGORY_COLORS[producer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default;
+    const defaultImg = `<div style="background-color: ${color}20; 
+                             display: flex; align-items: center; justify-content: center;">
+                          <span style="color: ${color}; font-size: 40px;">${producer.icon}</span>
+                        </div>`;
+    
+    // Check for local images for specific producers
+    const localImages = producerLocalImages[producer.name as keyof typeof producerLocalImages];
+    
+    // Get all producer images
+    const allImages = localImages 
+      ? localImages 
+      : [...(producer.images || [])].filter(img => img);
+    
+    // If we have an image, create a full-width image for the info window header
+    if (allImages && allImages.length > 0) {
+      return `<img src="${allImages[0]}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px 8px 0 0;" alt="${producer.name}">`;
+    }
+    
+    // Otherwise use the default icon-based placeholder
+    return `<div style="width: 100%; height: 140px; ${defaultImg} border-radius: 8px 8px 0 0;"></div>`;
+  }, [producerLocalImages]);
+
+  // Create improved info window content
   const createEnhancedInfoWindow = useCallback((producer: Producer): string => {
     const availability = getAvailabilityInfo(producer.availability);
+    const color = CATEGORY_COLORS[producer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default;
+    const isFavorited = favorited.includes(producer.id);
+    
+    // Random viewers for social proof
+    const viewers = Math.floor(Math.random() * 5) + 1;
     
     return `
-      <div style="width: 300px; padding: 0; border-radius: 12px; overflow: hidden; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+      <div style="width: 280px; border-radius: 8px; overflow: hidden; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
         ${createImageGrid(producer)}
         
-        <div style="padding: 14px; background-color: white;">
-          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px;">
-            <div style="font-size: 16px; font-weight: bold;">${producer.name}</div>
-            <div style="display: flex; gap: 4px;">
-              ${createSocialProofBadge(producer)}
+        <div style="position: absolute; top: 8px; left: 8px; background-color: white; color: ${color}; font-size: 11px; padding: 4px 8px; border-radius: 16px; font-weight: 600; display: flex; align-items: center;">
+          <span style="margin-right: 4px;">${producer.icon}</span>
+          ${(() => {
+            switch(producer.type) {
+              case 'baker': return 'Baker';
+              case 'gardener': return 'Gardener';
+              case 'eggs': return 'Eggs';
+              case 'homecook': return 'Home Cook';
+              case 'specialty': return 'Specialty';
+              default: return producer.type;
+            }
+          })()}
+        </div>
+        
+        <div style="position: absolute; top: 8px; right: 8px;">
+          <button
+            style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: white; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+            onclick="window.HelloNeighbor.toggleFavorite && window.HelloNeighbor.toggleFavorite(${producer.id})"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="${isFavorited ? '#FF5252' : 'none'}" stroke="${isFavorited ? '#FF5252' : 'currentColor'}" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <div style="padding: 16px;">
+          <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <h3 style="font-size: 16px; font-weight: 600; color: #333; margin: 0 0 4px 0;">${producer.name}</h3>
+              ${producer.featured ? 
+                '<span style="background-color: #FFDE7D; color: #2A5D3C; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold;">Featured</span>' : 
+                ''}
             </div>
+            
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+              ${createStarRating(producer.rating)}
+              <span style="color: #666; font-size: 12px; margin-left: 4px;">(${producer.reviews})</span>
+            </div>
+            
+            <p style="color: #555; margin: 0 0 12px 0; font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+              ${producer.description}
+            </p>
           </div>
           
-          <div style="display: flex; align-items: center; margin-bottom: 6px;">
-            ${createStarRating(producer.rating)}
-            <span style="color: #666; font-size: 12px; margin-left: 4px;">(${producer.reviews})</span>
+          <div style="background-color: #f7f7f7; padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+            <div style="font-size: 12px; font-weight: 600; color: #444; margin-bottom: 6px; display: flex; align-items: center;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2A5D3C" stroke-width="2" style="margin-right: 5px;">
+                <path d="M20.91 11.12l-8.5-8.5a1.24 1.24 0 0 0-1.74 0l-8.5 8.5a1.24 1.24 0 0 0-.36.88V19a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-7a1.24 1.24 0 0 0-.36-.88zM18 17.5a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5z"/>
+              </svg>
+              Available Items:
+            </div>
+            ${generateInventory(producer.items)}
           </div>
           
-          <div style="color: #444; margin-bottom: 10px; font-size: 13px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-            ${producer.description}
-          </div>
-          
-          <div style="background-color: #f5f5f5; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
-            <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 4px;">Available Items:</div>
-            ${generateInventory(producer.items.slice(0, 3))}
-          </div>
-          
-          ${createViewingNow()}
-          
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-            <span style="display: inline-flex; align-items: center; font-size: 12px; color: ${availability.color}; font-weight: 500;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background-color: ${availability.color}; margin-right: 4px;"></span>
-              ${availability.text}
-            </span>
-            <span style="font-size: 12px; color: #666; display: flex; align-items: center;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" style="margin-right: 4px;">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              ${producer.walkTime} min walk
+              <span style="font-size: 12px; color: #666;">${producer.walkTime} min walk</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; font-size: 11px; color: #666;">
+              <span style="width: 6px; height: 6px; background-color: #FF5252; border-radius: 50%; margin-right: 4px;"></span>
+              ${viewers} viewing
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+            <span style="display: inline-flex; align-items: center; font-size: 12px; color: ${availability.color}; font-weight: 500; 
+                         background-color: ${availability.bgColor}; padding: 6px 12px; border-radius: 16px;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background-color: ${availability.color}; margin-right: 6px;"></span>
+              ${availability.text}
             </span>
           </div>
           
-          <div style="display: flex; gap: 8px; margin-top: 10px;">
-            <button 
-              style="flex: 1; background-color: #2A5D3C; color: white; border: none; border-radius: 20px; padding: 8px 0; font-size: 12px; font-weight: 600; cursor: pointer;"
-              onclick="if(window.HelloNeighbor) window.HelloNeighbor.selectProducer(${producer.id})"
-            >View Profile</button>
-            <button 
-              style="width: 40px; display: flex; align-items: center; justify-content: center; background-color: #f5f5f5; border: none; border-radius: 20px; cursor: pointer;"
-              aria-label="Save to favorites"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
-            </button>
-          </div>
+          <button 
+            style="width: 100%; background-color: #2A5D3C; color: white; border: none; border-radius: 20px; padding: 10px 0; font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color 0.2s;"
+            onmouseover="this.style.backgroundColor='#224d32'"
+            onmouseout="this.style.backgroundColor='#2A5D3C'"
+            onclick="if(window.HelloNeighbor) window.HelloNeighbor.selectProducer(${producer.id})"
+          >View Profile</button>
         </div>
       </div>
     `;
-  }, [createImageGrid, createSocialProofBadge, createStarRating, generateInventory, createViewingNow, getAvailabilityInfo]);
+  }, [createStarRating, getAvailabilityInfo, generateInventory, favorited, createImageGrid]);
 
   // Function to create markers on the map
   const createMarkers = useCallback(() => {
@@ -308,7 +312,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
     // Create info window if it doesn't exist
     if (!infoWindowRef.current) {
       infoWindowRef.current = new window.google.maps.InfoWindow({
-        maxWidth: 320
+        maxWidth: 300
       });
     }
     
@@ -326,11 +330,12 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
         icon: {
           path: window.google.maps.SymbolPath.CIRCLE,
           fillColor: color,
-          fillOpacity: 0.8,
+          fillOpacity: 0.9,
           strokeColor: '#FFFFFF',
           strokeWeight: producer.featured ? 2 : 1,
           scale: producer.featured ? 10 : 8
-        }
+        },
+        animation: producer.featured ? window.google.maps.Animation.DROP : null
       });
       
       markersRef.current.push(marker);
@@ -358,6 +363,12 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
         if (infoWindowRef.current) {
           infoWindowRef.current.close();
         }
+        
+        // Center the map on this marker
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.setCenter({ lat: producer.lat, lng: producer.lng });
+          mapInstanceRef.current.setZoom(15);
+        }
       });
     });
   }, [filteredProducers, createEnhancedInfoWindow]);
@@ -377,19 +388,31 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
         // Create map if it doesn't exist
         if (!mapInstanceRef.current && window.google && window.google.maps) {
           // Center coordinates - San Diego
-          const center = { lat: 32.7000, lng: -117.1500 };
+          const center = { lat: 32.7157, lng: -117.1611 };
           
           mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
             center,
-            zoom: 10,
+            zoom: 12,
             mapTypeControl: false,
             streetViewControl: false,
-            zoomControl: true
+            zoomControl: true,
+            styles: [
+              {
+                featureType: 'poi',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }]
+              }
+            ]
           });
         }
         
-        // Update the global selectProducer function
-        if (window.HelloNeighbor) {
+        // Set up global handlers on the window object
+        if (typeof window !== 'undefined') {
+          if (!window.HelloNeighbor) {
+            window.HelloNeighbor = { selectProducer: () => {} };
+          }
+          
+          // Update the global selectProducer function
           window.HelloNeighbor.selectProducer = (producerId: number) => {
             const producer = producers.find(p => p.id === producerId);
             if (producer) {
@@ -397,7 +420,18 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
               if (infoWindowRef.current) {
                 infoWindowRef.current.close();
               }
+              
+              // Center map on producer
+              if (mapInstanceRef.current) {
+                mapInstanceRef.current.setCenter({ lat: producer.lat, lng: producer.lng });
+                mapInstanceRef.current.setZoom(15);
+              }
             }
+          };
+          
+          // Add toggleFavorite handler
+          window.HelloNeighbor.toggleFavorite = (producerId: number) => {
+            toggleFavorite(producerId);
           };
         }
         
@@ -426,7 +460,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
         infoWindowRef.current.close();
       }
     };
-  }, [producers, createMarkers]);
+  }, [producers, createMarkers, toggleFavorite]);
   
   // Recreate markers when filters change
   useEffect(() => {
@@ -434,19 +468,17 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
       createMarkers();
     }
   }, [selectedCategory, filterAvailability, createMarkers, isLoading]);
-
-  // REMOVE THIS EFFECT - This is causing the error
-  // Google Maps script is loaded externally in the initMap function
-  // useEffect(() => {
-  //   // Google Maps script is loaded externally
-  //   const map = new window.google.maps.Map(mapRef.current, {
-  //     center: { lat: 37.7749, lng: -122.4194 },
-  //     zoom: 10
-  //   });
-  // }, []);
   
+  // Close producer details panel
   const closeProducerDetails = () => {
     setSelectedProducer(null);
+  };
+  
+  // Handle toggling favorite status
+  const handleToggleFavorite = () => {
+    if (selectedProducer) {
+      toggleFavorite(selectedProducer.id);
+    }
   };
   
   return (
@@ -459,8 +491,7 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
       
       <div 
         ref={mapRef} 
-        className="w-full h-full"
-        style={{ minHeight: "400px" }}
+        className="w-full h-full min-h-[400px]"
         aria-label="Map showing local producers"
       ></div>
       
@@ -511,12 +542,23 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
                         } 
                         alt={selectedProducer.name} 
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          const color = CATEGORY_COLORS[selectedProducer.type as keyof typeof CATEGORY_COLORS]?.substring(1) || '2196F3';
+                          target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23${color}20'/%3E%3Ctext x='50' y='50' font-size='24' text-anchor='middle' dominant-baseline='middle' fill='%23${color}'%3E${selectedProducer.icon}%3C/text%3E%3C/svg%3E`;
+                        }}
                       />
                     </div>
                   );
                 } else {
+                  const color = CATEGORY_COLORS[selectedProducer.type as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default;
                   return (
-                    <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-2xl">
+                    <div 
+                      className="h-12 w-12 rounded-full flex items-center justify-center text-2xl"
+                      style={{ 
+                        backgroundColor: `${color}20`
+                      }}
+                    >
                       {selectedProducer.icon}
                     </div>
                   );
@@ -525,44 +567,88 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
               <div>
                 <h3 className="font-bold text-gray-800">{selectedProducer.name}</h3>
                 <div className="flex items-center text-sm text-gray-600">
-                  <Star className="text-yellow-500 mr-1 h-4 w-4" />
+                  <Star className="text-yellow-500 mr-1 h-4 w-4 fill-current" />
                   <span>{selectedProducer.rating} ({selectedProducer.reviews})</span>
                 </div>
               </div>
             </div>
-            <button 
-              onClick={closeProducerDetails}
-              className="p-1 rounded-full hover:bg-gray-100"
-              aria-label="Close producer details"
-            >
-              <X className="h-5 w-5 text-gray-500" />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button 
+                onClick={handleToggleFavorite}
+                className={`p-2 rounded-full ${
+                  favorited.includes(selectedProducer.id) 
+                    ? 'text-red-500 bg-red-50' 
+                    : 'text-gray-400 hover:bg-gray-100'
+                }`}
+                aria-label={favorited.includes(selectedProducer.id) ? "Remove from favorites" : "Add to favorites"}
+              >
+                <Heart className={`h-5 w-5 ${favorited.includes(selectedProducer.id) ? 'fill-current' : ''}`} />
+              </button>
+              <button 
+                onClick={closeProducerDetails}
+                className="p-2 rounded-full hover:bg-gray-100"
+                aria-label="Close producer details"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
           </div>
           
           <p className="text-sm text-gray-600 mt-2 mb-3 line-clamp-2">
             {selectedProducer.description}
           </p>
           
-          <div className="text-sm text-gray-700 flex items-center mb-2">
-            <Clock className="h-4 w-4 mr-1 text-gray-500" />
-            <span>{selectedProducer.walkTime} minute walk</span>
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center text-sm text-gray-600">
+              <Clock className="h-4 w-4 mr-1 text-gray-500" />
+              <span>{selectedProducer.walkTime} minute walk</span>
+            </div>
+            
+            <div className="flex items-center text-sm text-gray-600">
+              <Users className="h-4 w-4 mr-1 text-gray-500" />
+              <span>{Math.floor(Math.random() * 5) + 1} viewing</span>
+            </div>
+          </div>
+          
+          {/* Available items */}
+          <div className="bg-gray-50 p-3 rounded-lg mb-3">
+            <div className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Shield className="h-4 w-4 mr-1 text-primary" />
+              Available Items:
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {selectedProducer.items.slice(0, 6).map((item, idx) => (
+                <div key={idx} className="bg-white px-3 py-2 rounded-md text-sm flex justify-between items-center">
+                  <span className="truncate">{item}</span>
+                  <span className="ml-1 bg-gray-100 px-1.5 py-0.5 rounded text-xs text-gray-600">
+                    {Math.floor(Math.random() * 10) + 1}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
           
           {/* Photo gallery */}
           {(() => {
             const localImages = producerLocalImages[selectedProducer.name as keyof typeof producerLocalImages];
+            const images = localImages || (selectedProducer.images && selectedProducer.images.length > 0 ? selectedProducer.images : []);
             
-            if (localImages) {
+            if (images && images.length > 0) {
               return (
-                <div className="mt-3 mb-3">
+                <div className="mb-3">
                   <div className="text-sm font-medium text-gray-700 mb-2">Product Gallery</div>
                   <div className="grid grid-cols-3 gap-2">
-                    {localImages.map((img, index) => (
-                      <div key={index} className="aspect-square rounded-md overflow-hidden">
+                    {images.slice(0, 3).map((img, index) => (
+                      <div key={index} className="aspect-square rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                         <img 
                           src={img} 
                           alt={`${selectedProducer.name} product ${index + 1}`} 
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            const color = CATEGORY_COLORS[selectedProducer.type as keyof typeof CATEGORY_COLORS]?.substring(1) || '2196F3';
+                            target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23${color}20'/%3E%3Ctext x='50' y='50' font-size='24' text-anchor='middle' dominant-baseline='middle' fill='%23${color}'%3E${selectedProducer.icon}%3C/text%3E%3C/svg%3E`;
+                          }}
                         />
                       </div>
                     ))}
@@ -573,18 +659,19 @@ const MapView: React.FC<MapViewProps> = ({ producers, selectedCategory, filterAv
             return null;
           })()}
           
-          <div className="grid grid-cols-2 gap-3 mt-3">
-            <button className="bg-primary text-white py-2 px-4 rounded-full font-medium text-sm">
-              View Profile
-            </button>
-            <button className="border border-gray-300 py-2 px-4 rounded-full font-medium text-sm">
-              Message
-            </button>
+          {/* Availability badge */}
+          <div className="mb-3">
+            <div 
+              className="inline-flex items-center text-sm px-3 py-1.5 rounded-full"
+              style={{ 
+                backgroundColor: getAvailabilityInfo(selectedProducer.availability).bgColor,
+                color: getAvailabilityInfo(selectedProducer.availability).color 
+              }}
+            >
+              <span 
+                className="w-2 h-2 rounded-full mr-2"
+                style={{ backgroundColor: getAvailabilityInfo(selectedProducer.availability).color }}
+              ></span>
+              {getAvailabilityInfo(selectedProducer.availability).text}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default MapView;

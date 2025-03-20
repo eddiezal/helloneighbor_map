@@ -3,6 +3,7 @@ import React from 'react';
 import { useAppContext } from '../core/context/AppContext';
 import IntegratedMapView from '../features/map/components/IntegratedMapView';
 import ListView from '../features/listings/components/Listview';
+import TailwindTest from '../components/shared/TailwindTest'; // Add this import
 
 const HomePage: React.FC = () => {
   const { activeView } = useAppContext();
